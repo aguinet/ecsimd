@@ -18,7 +18,7 @@ static constexpr Bignum bn_from_bytes_BE(uint8_t const* bytes)
   eve::detail::for_<0, 1, nlimbs>([&](auto i_) {
     constexpr auto i = decltype(i_)::value;
     const auto limb = intmem::loadu_be<limb_type>(&bytes[(nlimbs-i-1)*sizeof(limb_type)]);
-    get<i>(ret) = limb;
+    kumi::get<i>(ret) = limb;
   });
   return ret;
 }
