@@ -1,4 +1,5 @@
-#include <ecsimd/ops.h>
+#include <ecsimd/add.h>
+#include <ecsimd/sub.h>
 #include <ecsimd/serialization.h>
 #include <ecsimd/literals.h>
 
