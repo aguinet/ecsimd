@@ -15,11 +15,10 @@ static constexpr Bignum bn_from_bytes_BE(uint8_t const* bytes)
   using limb_type = typename Bignum::limb_type;
   constexpr size_t nlimbs = Bignum::nlimbs;
   Bignum ret;
-  eve::detail::for_<0, 1, nlimbs>([&](auto i_) {
+  kumi::for_each_index( [&](auto i_, auto& m) {
     constexpr auto i = decltype(i_)::value;
-    const auto limb = intmem::loadu_be<limb_type>(&bytes[(nlimbs-i-1)*sizeof(limb_type)]);
-    kumi::get<i>(ret) = limb;
-  });
+    m = intmem::loadu_be<limb_type>(&bytes[(nlimbs-i-1)*sizeof(limb_type)]);
+  }, ret);
   return ret;
 }
 
@@ -34,10 +33,10 @@ static void bn_to_bytes_BE(uint8_t* out, Bignum const& v)
 {
   using limb_type = typename Bignum::limb_type;
   constexpr size_t nlimbs = Bignum::nlimbs;
-  eve::detail::for_<0, 1, nlimbs>([&](auto i_) {
+  kumi::for_each_index( [&](auto i_, auto const& m) {
     constexpr auto i = decltype(i_)::value;
-    intmem::storeu_be<limb_type>(&out[(nlimbs-i-1)*sizeof(limb_type)], get<i>(v));
-  });
+    intmem::storeu_be<limb_type>(&out[(nlimbs-i-1)*sizeof(limb_type)], m);
+  }, v);
 }
 
 template <class Bignum>
