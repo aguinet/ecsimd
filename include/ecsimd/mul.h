@@ -21,12 +21,20 @@ static auto mul_wide_raw_m128(eve::wide<uint32_t, eve::fixed<4>> const a, eve::w
 }
 
 static auto mul_wide(eve::wide<uint32_t, eve::fixed<4>> const a, eve::wide<uint32_t, eve::fixed<4>> const b) {
-	const auto [mul0, mul1] = mul_wide_raw_m128(a, b);
-	struct { __m128i v0; __m128i v1;} ret = {
-		_mm_unpacklo_epi64(mul0, mul1),
-		_mm_unpackhi_epi64(mul0, mul1)
-	};
-	return std::bit_cast<eve::wide<uint64_t, eve::fixed<4>>>(ret);
+#ifdef __AVX2__
+  const __m128i a_ = std::bit_cast<__m128i>(a);
+  const __m128i b_ = std::bit_cast<__m128i>(b);
+  const __m256i a64 = _mm256_cvtepu32_epi64(a);
+  const __m256i b64 = _mm256_cvtepu32_epi64(b);
+  const __m256i ret = _mm256_mul_epu32(a64, b64);
+#else
+  const auto [mul0, mul1] = mul_wide_raw_m128(a, b);
+  struct { __m128i v0; __m128i v1;} ret = {
+    _mm_unpacklo_epi64(mul0, mul1),
+    _mm_unpackhi_epi64(mul0, mul1)
+  };
+#endif
+  return std::bit_cast<eve::wide<uint64_t, eve::fixed<4>>>(ret);
 }
 
 // HACK: temporarely home-made for Nx32 bits integers.
