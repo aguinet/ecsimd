@@ -80,6 +80,39 @@ __attribute__((noinline)) static auto
   return add(ret, carry);
 }
 
+template <size_t N>
+__attribute__((noinline)) static auto
+  mul2(eve::wide<bignum<uint32_t, N>, eve::fixed<4>> const& a, eve::wide<bignum<uint32_t, N>, eve::fixed<4>> const& b)
+{
+  using limb_type = uint32_t;
+  using dbl_limb_type = uint64_t;
+  constexpr size_t nlimbs = N;
+  constexpr auto limb_bits = std::numeric_limits<limb_type>::digits;
+  using cardinal = eve::fixed<4>;
+  using ret_type = eve::wide<bignum<uint32_t, N*2>, cardinal>;
+
+  auto ret = eve::zero(eve::as<ret_type>());
+
+  eve::detail::for_<0, 1, nlimbs>([&](auto i_) {
+    constexpr auto i = decltype(i_)::value;
+    auto highprev = eve::zero(eve::as<eve::wide<dbl_limb_type, cardinal>>());
+    eve::detail::for_<0, 1, nlimbs>([&](auto j_) {
+      constexpr auto j = decltype(j_)::value;
+      constexpr auto retlimb = i+j;
+
+      auto t = mul_wide(eve::get<i>(a), eve::get<j>(b));
+      t += eve::convert(get<retlimb>(ret), eve::as<dbl_limb_type>());
+      t += highprev;
+      // Chances are we can "hack" this to make it faster using an AVX2 shuffle + addition.
+      get<retlimb>(ret) = eve::convert(t, eve::as<limb_type>());
+
+      highprev = t >> limb_bits;
+    });
+    get<i + nlimbs>(ret) = eve::convert(highprev, eve::as<limb_type>());
+  });
+  return ret;
+}
+
 } // ecsmid
 
 #endif

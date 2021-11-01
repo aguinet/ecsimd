@@ -66,12 +66,24 @@ TEST(Ops128, Sub) {
 }
 
 TEST(Ops128, Mul) {
-  const auto a = wide_bignum_set1<bignum_128, eve::fixed<4>>("909680e1f399ca5916134a18b816399b"_hex);
-  const auto b = wide_bignum_set1<bignum_128, eve::fixed<4>>("0e36dfecf5e7f74363c453efc1cbc153"_hex);
-  const auto res = ecsimd::mul(a,b);
-  const auto buf = bn_to_bytes_BE(res.get(0));
-  for (uint8_t v: buf) {
-    printf("%02X", v);
+  const auto a = wide_bignum_set1<bignum_128, eve::fixed<4>>("ffffffffffffffffffffffffffffffff"_hex);
+  const auto b = wide_bignum_set1<bignum_128, eve::fixed<4>>("eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"_hex);
+
+  {
+    const auto res = ecsimd::mul(a,b);
+    const auto buf = bn_to_bytes_BE(res.get(0));
+    for (uint8_t v: buf) {
+      printf("%02X", v);
+    }
+    printf("\n");
   }
-  printf("\n");
+
+  {
+    const auto res = ecsimd::mul2(a,b);
+    const auto buf = bn_to_bytes_BE(res.get(0));
+    for (uint8_t v: buf) {
+      printf("%02X", v);
+    }
+    printf("\n");
+  }
 }
