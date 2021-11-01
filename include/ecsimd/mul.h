@@ -32,13 +32,13 @@ static auto mul_wide(eve::wide<uint32_t, eve::fixed<4>> const a, eve::wide<uint3
 // HACK: temporarely home-made for Nx32 bits integers.
 template <size_t N>
 __attribute__((noinline)) static auto
-  mul(eve::wide<bignum<uint32_t, N>> const& a, eve::wide<bignum<uint32_t, N>> const& b)
+  mul(eve::wide<bignum<uint32_t, N>, eve::fixed<4>> const& a, eve::wide<bignum<uint32_t, N>, eve::fixed<4>> const& b)
 {
   using limb_type = uint32_t;
   using dbl_limb_type = uint64_t;
   constexpr size_t nlimbs = N;
   constexpr auto limb_bits = std::numeric_limits<limb_type>::digits;
-  using cardinal = eve::cardinal_t<eve::wide<uint32_t>>;
+  using cardinal = eve::fixed<4>;
   using wide_bn_dbl_type = eve::wide<bignum<dbl_limb_type, nlimbs>, cardinal>;
 
   auto ret = eve::zero(eve::as<wide_bn_dbl_type>());

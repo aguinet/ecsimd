@@ -17,6 +17,12 @@ static auto wide_bignum_set1(std::array<uint8_t, sizeof(Bignum)> const& bytes) {
   return eve::wide<Bignum>{ [&](auto i, auto) { return BN; } };
 }
 
+template <class Bignum, class Cardinal>
+static auto wide_bignum_set1(std::array<uint8_t, sizeof(Bignum)> const& bytes) {
+  const auto BN = bn_from_bytes_BE<Bignum>(bytes);
+  return eve::wide<Bignum, Cardinal>{ [&](auto i, auto) { return BN; } };
+}
+
 template <class Bignum, size_t N>
 static auto DoAdd(std::array<uint8_t, N> const& v0, std::array<uint8_t, N> const& v1)
 {
@@ -60,9 +66,9 @@ TEST(Ops128, Sub) {
 }
 
 TEST(Ops128, Mul) {
-  const auto res = DoMul<bignum_128>(
-      "909680e1f399ca5916134a18b816399b"_hex,
-      "0e36dfecf5e7f74363c453efc1cbc153"_hex);
+  const auto a = wide_bignum_set1<bignum_128, eve::fixed<4>>("909680e1f399ca5916134a18b816399b"_hex);
+  const auto b = wide_bignum_set1<bignum_128, eve::fixed<4>>("0e36dfecf5e7f74363c453efc1cbc153"_hex);
+  const auto res = ecsimd::mul(a,b);
   const auto buf = bn_to_bytes_BE(res.get(0));
   for (uint8_t v: buf) {
     printf("%02X", v);
