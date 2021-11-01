@@ -56,7 +56,7 @@ __attribute__((noinline)) static auto
     eve::detail::for_<0, 1, nlimbs>([&](auto j_) {
       constexpr auto j = decltype(j_)::value;
       constexpr size_t retlimb = (i+j)>>1;
-      const auto m = mul_wide(get<i>(a), get<j>(b));
+      const auto m = mul_wide(eve::get<i>(a), eve::get<j>(b));
       if constexpr (((i+j) & 1) == 0) {
         add_carry(std::integral_constant<size_t, retlimb>{}, m);
       }
