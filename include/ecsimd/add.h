@@ -6,13 +6,13 @@
 
 namespace ecsimd {
 
-template <class T, size_t N>
-static auto add(eve::wide<bignum<T, N>> const& a, eve::wide<bignum<T, N>> const& b)
+template <class T, size_t N, class C>
+static auto add(eve::wide<bignum<T, N>, C> const& a, eve::wide<bignum<T, N>, C> const& b)
 {
   using limb_type = T;
   constexpr auto nlimbs = N;
-  eve::wide<limb_type> carry; 
-  eve::wide<bignum<T,N>> ret;
+  eve::wide<limb_type, C> carry; 
+  eve::wide<bignum<T,N>, C> ret;
   eve::detail::for_<0, 1, nlimbs>([&](auto i_) {
     constexpr auto i = decltype(i_)::value;
     const auto aa = eve::get<i>(a);
