@@ -44,6 +44,9 @@ struct bignum: details::eve_struct_nlimbs<
 using bignum_128 = bignum<uint32_t, 4>;
 using bignum_256 = bignum<uint32_t, 8>;
 
+template <class Bignum>
+using wide_bignum = eve::wide<Bignum, eve::fixed<4>>;
+
 } // ecsimd
 
 #endif

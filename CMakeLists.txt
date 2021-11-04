@@ -23,3 +23,5 @@ set_target_properties(ecsimd PROPERTIES
 )
 
 add_subdirectory(tests)
+add_subdirectory(benchs)
+add_subdirectory(benchs_ctbignum)
