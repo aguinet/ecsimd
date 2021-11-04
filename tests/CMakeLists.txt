@@ -3,5 +3,8 @@ enable_testing()
 add_executable(ops ops.cpp)
 target_link_libraries(ops ecsimd gtest_main)
 
+add_executable(mgry mgry.cpp)
+target_link_libraries(mgry ecsimd gtest_main)
+
 include(GoogleTest)
 gtest_discover_tests(ops)

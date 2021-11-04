@@ -4,32 +4,42 @@
 #include <eve/wide.hpp>
 #include <ecsimd/bignum.h>
 
+#include <tuple>
+
 namespace ecsimd {
 
-template <class T, size_t N, class C>
-static auto add(eve::wide<bignum<T, N>, C> const& a, eve::wide<bignum<T, N>, C> const& b)
+template <concepts::wide_bignum WBN>
+static auto add(WBN const& a, WBN const& b)
 {
-  using limb_type = T;
-  constexpr auto nlimbs = N;
-  eve::wide<limb_type, C> carry; 
-  eve::wide<bignum<T,N>, C> ret;
+  using limb_type = bn_limb_t<WBN>;
+  using C = typename WBN::cardinal_type;
+  constexpr auto nlimbs = bn_nlimbs<WBN>;
+
+  eve::logical<eve::wide<limb_type, C>> carry_mask;
+  WBN ret;
   eve::detail::for_<0, 1, nlimbs>([&](auto i_) {
     constexpr auto i = decltype(i_)::value;
     const auto aa = eve::get<i>(a);
     const auto bb = eve::get<i>(b);
     const auto sum = aa + bb;
     if constexpr (i == 0) {
-      carry = -(sum < aa).mask();
+      carry_mask = sum < aa;
       eve::get<i>(ret) = sum;
     }
     else {
-      const auto res = sum + carry;
-      carry = -((sum < aa) || (res < sum)).mask();
+      const auto res = sum - carry_mask.mask();
+      carry_mask = (sum < aa) || (res < sum);
       eve::get<i>(ret) = res;
     }
   });
 
-  return ret;
+  return std::make_tuple(ret, carry_mask);
+}
+
+template <concepts::wide_bignum WBN>
+static auto add_no_carry(WBN const& a, WBN const& b)
+{
+  return std::get<0>(add(a,b));
 }
 
 } // ecsimd

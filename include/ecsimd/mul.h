@@ -47,48 +47,6 @@ __attribute__((noinline)) static auto
   constexpr size_t nlimbs = N;
   constexpr auto limb_bits = std::numeric_limits<limb_type>::digits;
   using cardinal = eve::fixed<4>;
-  using wide_bn_dbl_type = eve::wide<bignum<dbl_limb_type, nlimbs>, cardinal>;
-
-  auto ret = eve::zero(eve::as<wide_bn_dbl_type>());
-  auto carry = eve::zero(eve::as<wide_bn_dbl_type>());
-  auto add_carry = [&]<size_t lidx>(std::integral_constant<size_t, lidx>, eve::wide<dbl_limb_type, cardinal> val) __attribute__((always_inline)) {
-    const auto v = eve::get<lidx>(ret);
-    const auto newv = v+val;
-    eve::get<lidx>(ret) = newv;
-    if constexpr ((lidx+1) < nlimbs) {
-      eve::get<lidx+1>(carry) -= (newv<v).mask();
-    }
-  };
-  eve::detail::for_<0, 1, nlimbs>([&](auto i_) {
-    constexpr auto i = decltype(i_)::value;
-    eve::detail::for_<0, 1, nlimbs>([&](auto j_) {
-      constexpr auto j = decltype(j_)::value;
-      constexpr size_t retlimb = (i+j)>>1;
-      const auto m = mul_wide(eve::get<i>(a), eve::get<j>(b));
-      if constexpr (((i+j) & 1) == 0) {
-        add_carry(std::integral_constant<size_t, retlimb>{}, m);
-      }
-      else {
-        // TODO: there are optimisation opportunities to prevent these bit shifts
-        add_carry(std::integral_constant<size_t, retlimb>{}, m << 32);
-        if constexpr ((retlimb+1) < nlimbs) {
-          add_carry(std::integral_constant<size_t, retlimb+1>{}, m >> 32);
-        }
-      }
-    });
-  });
-  return add(ret, carry);
-}
-
-template <size_t N>
-__attribute__((noinline)) static auto
-  mul2(eve::wide<bignum<uint32_t, N>, eve::fixed<4>> const& a, eve::wide<bignum<uint32_t, N>, eve::fixed<4>> const& b)
-{
-  using limb_type = uint32_t;
-  using dbl_limb_type = uint64_t;
-  constexpr size_t nlimbs = N;
-  constexpr auto limb_bits = std::numeric_limits<limb_type>::digits;
-  using cardinal = eve::fixed<4>;
   using ret_type = eve::wide<bignum<uint32_t, N*2>, cardinal>;
 
   auto ret = eve::zero(eve::as<ret_type>());
@@ -101,14 +59,14 @@ __attribute__((noinline)) static auto
       constexpr auto retlimb = i+j;
 
       auto t = mul_wide(eve::get<i>(a), eve::get<j>(b));
-      t += eve::convert(get<retlimb>(ret), eve::as<dbl_limb_type>());
+      t += eve::convert(eve::get<retlimb>(ret), eve::as<dbl_limb_type>());
       t += highprev;
       // Chances are we can "hack" this to make it faster using an AVX2 shuffle + addition.
-      get<retlimb>(ret) = eve::convert(t, eve::as<limb_type>());
+      eve::get<retlimb>(ret) = eve::convert(t, eve::as<limb_type>());
 
       highprev = t >> limb_bits;
     });
-    get<i + nlimbs>(ret) = eve::convert(highprev, eve::as<limb_type>());
+    eve::get<i + nlimbs>(ret) = eve::convert(highprev, eve::as<limb_type>());
   });
   return ret;
 }

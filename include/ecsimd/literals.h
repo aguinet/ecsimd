@@ -6,7 +6,7 @@
 #include <cstdint>
 #include <type_traits>
 
-namespace ecsimd::literals {
+namespace ecsimd {
 
 namespace details {
 template <char C>
@@ -24,6 +24,7 @@ constexpr uint8_t fromHex(char C) {
 }
 } // details
 
+namespace literals {
 template <class CharT, CharT... Str>
 constexpr auto operator "" _hex() {
   static_assert(std::is_same_v<CharT, char>);
@@ -40,7 +41,8 @@ constexpr auto operator "" _hex() {
   }
   return Ret;
 }
+} // literals
 
-} // ecsimd::literals
+} // ecsimd
 
 #endif
