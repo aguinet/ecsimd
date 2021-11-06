@@ -92,6 +92,15 @@ using bn_limb_t = typename bn_traits<T>::limb_type;
 template <class T>
 static constexpr size_t bn_nlimbs = bn_traits<T>::nlimbs;
 
+// Used as a return type of comparaisons and carries
+template <concepts::wide_bignum WBN>
+using cmp_res_t = eve::logical<eve::wide<bn_limb_t<WBN>, eve::cardinal_t<WBN>>>;
+
+namespace concepts {
+template <class T, class WBN>
+concept cmp_res = std::same_as<T, cmp_res_t<WBN>>;
+} // concepts
+
 } // ecsimd
 
 #endif

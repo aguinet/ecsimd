@@ -15,7 +15,7 @@ auto sub(WBN const& a, WBN const& b)
   using C = typename WBN::cardinal_type;
   constexpr auto nlimbs = bn_nlimbs<WBN>;
 
-  eve::logical<eve::wide<limb_type, C>> carry_mask;
+  cmp_res_t<WBN> carry_mask;
   WBN ret;
   eve::detail::for_<0, 1, nlimbs>([&](auto i_) {
     constexpr auto i = decltype(i_)::value;
@@ -42,15 +42,19 @@ auto sub_no_carry(WBN const& a, WBN const& b) {
 }
 
 // return a-p if a > p, else a
-template <size_t nlimbs_out, concepts::wide_bignum WBN>
-auto sub_if_above(WBN const& a, WBN const& p) {
+template <size_t nlimbs_out, concepts::wide_bignum WBN, concepts::cmp_res<WBN>... Carry>
+auto sub_if_above(WBN const& a, WBN const& p, Carry... additional_carries)
+{
   using limb_type = bn_limb_t<WBN>;
   using cardinal = eve::cardinal_t<WBN>;
   constexpr auto nlimbs = bn_nlimbs<WBN>;
 
   WBN asub;
-  eve::logical<eve::wide<limb_type, cardinal>> carry_mask;
+  cmp_res_t<WBN> carry_mask;
   std::tie(asub, carry_mask) = sub(a, p);
+  if constexpr (sizeof...(additional_carries) > 0) {
+    carry_mask = (carry_mask || (additional_carries || ...));
+  }
 
   eve::wide<bignum<limb_type, nlimbs_out>, cardinal> ret;
   eve::detail::for_<0,1,nlimbs_out>([&](auto i_) {
@@ -64,9 +68,10 @@ auto sub_if_above(WBN const& a, WBN const& p) {
   return ret;
 }
 
-template <concepts::wide_bignum WBN>
-auto sub_if_above(WBN const& a, WBN const& p) {
-  return sub_if_above<bn_nlimbs<WBN>, WBN>(a,p);
+template <concepts::wide_bignum WBN, concepts::cmp_res<WBN>... Carry>
+auto sub_if_above(WBN const& a, WBN const& p, Carry... additional_carries) {
+  return sub_if_above<bn_nlimbs<WBN>, WBN>(a,p,
+      std::forward<Carry>(additional_carries)...);
 }
 
 } // ecsimd
