@@ -2,6 +2,7 @@
 #include <ecsimd/sub.h>
 #include <ecsimd/mul.h>
 #include <ecsimd/cmp.h>
+#include <ecsimd/modular.h>
 #include <ecsimd/serialization.h>
 #include <ecsimd/literals.h>
 
@@ -28,6 +29,8 @@ static auto DoFunc(std::array<uint8_t, N> const& v0, std::array<uint8_t, N> cons
 template <concepts::wide_bignum WBN>
 static auto DoAdd = [](auto const& v0, auto const& v1) { return DoFunc<WBN>(v0, v1, &ecsimd::add_no_carry<WBN>); };
 template <concepts::wide_bignum WBN>
+static auto DoMul = [](auto const& v0, auto const& v1) { return DoFunc<WBN>(v0, v1, &ecsimd::mul<bn_nlimbs<WBN>>); };
+template <concepts::wide_bignum WBN>
 static auto DoSub = [](auto const& v0, auto const& v1) { return DoFunc<WBN>(v0, v1, &ecsimd::sub_no_carry<WBN>); };
 template <concepts::wide_bignum WBN>
 static auto DoLT  = [](auto const& v0, auto const& v1) { return DoFunc<WBN>(v0, v1, [](auto a, auto b) { return a < b; }); };
@@ -40,6 +43,7 @@ static auto DoGTE = [](auto const& v0, auto const& v1) { return DoFunc<WBN>(v0, 
 
 TEST(Ops128, Binops) {
   using WBN = wide_bignum<bignum_128>;
+  using WDBN = wide_bignum<bignum_256>;
 
   // Additions
   EXPECT_TRUE(eve::all(DoAdd<WBN>("00000000000000000000000500000005"_hex, "0000000000000000FFFFFFFFFFFFFFFF"_hex) ==
@@ -50,6 +54,10 @@ TEST(Ops128, Binops) {
   // Substractions
   EXPECT_TRUE(eve::all(DoSub<WBN>("00000000000000000000000500000005"_hex, "0000000000000000FFFFFFFFFFFFFFFF"_hex) ==
     wide_bignum_set1<WBN>("ffffffffffffffff0000000500000006"_hex)));
+
+  // Multiplications
+  EXPECT_TRUE(eve::all(DoMul<WBN>("ffffffffffffffffffffffffffffffff"_hex, "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"_hex) ==
+    wide_bignum_set1<WDBN>("EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEED11111111111111111111111111111112"_hex)));
 
   // Comparaisons
   EXPECT_TRUE(eve::all(DoLT<WBN> ("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"_hex, "BAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"_hex)));
@@ -62,32 +70,30 @@ TEST(Ops128, Binops) {
   EXPECT_TRUE(eve::none(DoLT<WBN> ("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAB"_hex, "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"_hex)));
 }
 
-TEST(Ops128, Mul) {
-  using WBN = wide_bignum<bignum_128>;
-  const auto a = wide_bignum_set1<WBN>("ffffffffffffffffffffffffffffffff"_hex);
-  const auto b = wide_bignum_set1<WBN>("eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"_hex);
+TEST(Ops256, Binops) {
+  using WBN = wide_bignum<bignum_256>;
+  using WDBN = wide_bignum<bignum_512>;
 
-  {
-    const auto res = ecsimd::mul(a,b);
-    const auto buf = bn_to_bytes_BE(res.get(0));
-    for (uint8_t v: buf) {
-      printf("%02X", v);
-    }
-    printf("\n");
-  }
+  // Multiplications
+  EXPECT_TRUE(eve::all(DoMul<WBN>(
+      "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"_hex,
+      "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"_hex) ==
+    wide_bignum_set1<WDBN>("EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEED1111111111111111111111111111111111111111111111111111111111111112"_hex)));
 }
 
-TEST(Ops256, Mul) {
+TEST(Ops256, Mod) {
   using WBN = wide_bignum<bignum_256>;
-  const auto a = wide_bignum_set1<WBN>("ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"_hex);
-  const auto b = wide_bignum_set1<WBN>("eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"_hex);
+  const auto a = wide_bignum_set1<WBN>("fffffffffffffffffffffffffffffffffffffffffffffffffffffff000000000"_hex);
+  const auto b = wide_bignum_set1<WBN>("ffeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"_hex);
+  const auto p = wide_bignum_set1<WBN>("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEFFFFFC2F"_hex);
+  const auto sum = mod_add(a,b,p);
 
   {
-    const auto res = ecsimd::mul(a,b);
-    const auto buf = bn_to_bytes_BE(res.get(0));
+    const auto buf = bn_to_bytes_BE(sum.get(0));
     for (uint8_t v: buf) {
       printf("%02X", v);
     }
     printf("\n");
   }
+  EXPECT_TRUE(eve::all(sum == wide_bignum_set1<WBN>("ffeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeedfeeeef2bf"_hex)));
 }
