@@ -5,6 +5,7 @@
 #include <ecsimd/bignum.h>
 
 #include <tuple>
+#include <iostream>
 
 namespace ecsimd {
 
@@ -41,9 +42,9 @@ auto sub_no_carry(WBN const& a, WBN const& b) {
   return std::get<0>(sub(a,b));
 }
 
-// return a-p if a > p, else a
-template <size_t nlimbs_out, concepts::wide_bignum WBN, concepts::cmp_res<WBN>... Carry>
-auto sub_if_above(WBN const& a, WBN const& p, Carry... additional_carries)
+// return a-p if a > p, else a.
+template <size_t nlimbs_out, concepts::wide_bignum WBN, concepts::cmp_res<WBN>... Mask>
+auto sub_if_above(WBN const& a, WBN const& p, Mask... additional_masks)
 {
   using limb_type = bn_limb_t<WBN>;
   using cardinal = eve::cardinal_t<WBN>;
@@ -52,8 +53,8 @@ auto sub_if_above(WBN const& a, WBN const& p, Carry... additional_carries)
   WBN asub;
   cmp_res_t<WBN> carry_mask;
   std::tie(asub, carry_mask) = sub(a, p);
-  if constexpr (sizeof...(additional_carries) > 0) {
-    carry_mask = (carry_mask || (additional_carries || ...));
+  if constexpr (sizeof...(additional_masks) > 0) {
+    carry_mask = (carry_mask && (additional_masks && ...));
   }
 
   eve::wide<bignum<limb_type, nlimbs_out>, cardinal> ret;

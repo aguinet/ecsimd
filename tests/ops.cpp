@@ -33,6 +33,8 @@ static auto DoMul = [](auto const& v0, auto const& v1) { return DoFunc<WBN>(v0, 
 template <concepts::wide_bignum WBN>
 static auto DoSub = [](auto const& v0, auto const& v1) { return DoFunc<WBN>(v0, v1, &ecsimd::sub_no_carry<WBN>); };
 template <concepts::wide_bignum WBN>
+static auto DoSubIfAbove = [](auto const& v0, auto const& v1) { return DoFunc<WBN>(v0, v1, &ecsimd::sub_if_above<WBN>); };
+template <concepts::wide_bignum WBN>
 static auto DoLT  = [](auto const& v0, auto const& v1) { return DoFunc<WBN>(v0, v1, [](auto a, auto b) { return a < b; }); };
 template <concepts::wide_bignum WBN>
 static auto DoLTE = [](auto const& v0, auto const& v1) { return DoFunc<WBN>(v0, v1, [](auto a, auto b) { return a <= b; }); };
@@ -54,6 +56,14 @@ TEST(Ops128, Binops) {
   // Substractions
   EXPECT_TRUE(eve::all(DoSub<WBN>("00000000000000000000000500000005"_hex, "0000000000000000FFFFFFFFFFFFFFFF"_hex) ==
     wide_bignum_set1<WBN>("ffffffffffffffff0000000500000006"_hex)));
+
+  // Substracte if above
+  EXPECT_TRUE(eve::all(DoSubIfAbove<WBN>("F0000000000000000000000000000005"_hex, "F0000000000000000000000000000004"_hex) ==
+    wide_bignum_set1<WBN>("00000000000000000000000000000001"_hex)));
+  EXPECT_TRUE(eve::all(DoSubIfAbove<WBN>("F0000000000000000000000000000004"_hex, "F0000000000000000000000000000004"_hex) ==
+    wide_bignum_set1<WBN>("00000000000000000000000000000000"_hex)));
+  EXPECT_TRUE(eve::all(DoSubIfAbove<WBN>("F0000000000000000000000000000003"_hex, "F0000000000000000000000000000004"_hex) ==
+    wide_bignum_set1<WBN>("F0000000000000000000000000000003"_hex)));
 
   // Multiplications
   EXPECT_TRUE(eve::all(DoMul<WBN>("ffffffffffffffffffffffffffffffff"_hex, "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"_hex) ==
@@ -83,17 +93,26 @@ TEST(Ops256, Binops) {
 
 TEST(Ops256, Mod) {
   using WBN = wide_bignum<bignum_256>;
-  const auto a = wide_bignum_set1<WBN>("fffffffffffffffffffffffffffffffffffffffffffffffffffffff000000000"_hex);
-  const auto b = wide_bignum_set1<WBN>("ffeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"_hex);
   const auto p = wide_bignum_set1<WBN>("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEFFFFFC2F"_hex);
-  const auto sum = mod_add(a,b,p);
 
   {
-    const auto buf = bn_to_bytes_BE(sum.get(0));
-    for (uint8_t v: buf) {
-      printf("%02X", v);
-    }
-    printf("\n");
+    const auto a = wide_bignum_set1<WBN>("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEFFFFFC2E"_hex);
+    const auto b = wide_bignum_set1<WBN>("0000000000000000000000000000000000000000000000000000000000000002"_hex);
+    EXPECT_TRUE(eve::all(mod_add(a,b,p) == wide_bignum_set1<WBN>("0000000000000000000000000000000000000000000000000000000000000001"_hex)));
   }
-  EXPECT_TRUE(eve::all(sum == wide_bignum_set1<WBN>("ffeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeedfeeeef2bf"_hex)));
+
+  {
+    const auto a = wide_bignum_set1<WBN>("fffffffffffffffffffffffffffffffffffffffffffffffffffffff000000000"_hex);
+    const auto b = wide_bignum_set1<WBN>("ffeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"_hex);
+    const auto sum = mod_add(a,b,p);
+
+    {
+      const auto buf = bn_to_bytes_BE(sum.get(0));
+      for (uint8_t v: buf) {
+        printf("%02X", v);
+      }
+      printf("\n");
+    }
+    EXPECT_TRUE(eve::all(sum == wide_bignum_set1<WBN>("ffeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeedfeeeef2bf"_hex)));
+  }
 }
