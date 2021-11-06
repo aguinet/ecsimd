@@ -2,6 +2,7 @@
 #define ECSIMD_MGRY_MUL_H
 
 #include <ecsimd/mul.h>
+#include <ecsimd/sub.h>
 #include <ecsimd/utility.h>
 #include <ecsimd/cmp.h>
 
@@ -96,20 +97,7 @@ __attribute__((noinline)) WBN mgry_mul(WBN const& x, WBN const& y) {
       eve::get<nlimbs>(A) = eve::convert(tmp >> limb_bits, eve::as<limb_type>());
   });
 
-  wide_bignum_p1 Asub;
-  eve::logical<wide_limb_type> carry_mask;
-  std::tie(Asub, carry_mask) = sub(A, wide_bignum_p1{PNp1});
-  WBN ret;
-  eve::detail::for_<0,1,nlimbs>([&](auto i_) {
-    constexpr auto i = decltype(i_)::value;
-    const auto va = eve::get<i>(A);
-    const auto vasub = eve::get<i>(Asub);
-    const auto mask = eve::broadcast(carry_mask, eve::index<i>);
-
-    eve::get<i>(ret) = eve::if_else(mask, va, vasub);
-  });
-
-  return ret;
+  return sub_if_above<nlimbs>(A, wide_bignum_p1{PNp1});
 }
 
 } // ecsimd::details

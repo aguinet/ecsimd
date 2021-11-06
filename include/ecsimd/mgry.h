@@ -11,6 +11,8 @@ template <concepts::wide_bignum WBN, concepts::bignum_cst P>
 struct mgry_constants {
   using limb_type = bn_limb_t<WBN>;
   using BN = typename WBN::value_type;
+  // TODO
+  // static_assert(PN.cbn() * 2 < 2**n);
   static constexpr size_t nlimbs = bn_nlimbs<WBN>;
   static constexpr auto R   = cbn::detail::unary_encoding<nlimbs, nlimbs + 1, limb_type>();
   static constexpr auto Rsq = cbn::detail::unary_encoding<2 * nlimbs, 2 * nlimbs + 1, limb_type>();
@@ -22,13 +24,9 @@ struct mgry_constants {
 };
 
 namespace details {
-/*
 template <concepts::bignum_cst P, concepts::wide_bignum WBN>
-WBN mgry_mul(WBN const& a, WBN const& b);*/
-
-template <concepts::bignum_cst P, concepts::wide_bignum WBN>
-WBN mgry_reduce(WBN const& a);
-}
+WBN mgry_mul(WBN const& a, WBN const& b);
+} // details
 
 template <concepts::wide_bignum WBN, concepts::bignum_cst P>
 struct wide_mgry_bignum
@@ -42,14 +40,13 @@ struct wide_mgry_bignum
     n_(n)
   { }
 
-  /*
   static wide_mgry_bignum from_classical(WBN const& n) {
     return wide_mgry_bignum{details::mgry_mul<P_type>(n, WBN{constants_type::Rsq_p})};
-  }*/
-
-  WBN to_classical() const {
-    return details::mgry_reduce<P_type>(n_);
   }
+
+  /*WBN to_classical() const {
+    return details::mgry_reduce<P_type>(n_);
+  }*/
 
   WBN const& wbn() const { return n_; }
 
@@ -61,14 +58,6 @@ namespace concepts {
 template <class T>
 concept wide_mgry_bignum = std::same_as<T, wide_mgry_bignum<typename T::wide_bignum_type, typename T::P_type>>;
 } // concepts
-
-// Operations
-
-/*
-template <concepts::wide_mgry_bignum WMBN>
-auto mul(WMBN const& a, WMBN const& b) {
-  return WMBN{details::mgry_mul<typename WMBN::P_type>(a.bn(), b.bn())};
-}*/
 
 } // ecsimd::mgry
 
