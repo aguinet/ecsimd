@@ -11,8 +11,6 @@ template <concepts::wide_bignum WBN, concepts::bignum_cst P>
 struct mgry_constants {
   using limb_type = bn_limb_t<WBN>;
   using BN = typename WBN::value_type;
-  // TODO
-  // static_assert(PN.cbn() * 2 < 2**n);
   static constexpr size_t nlimbs = bn_nlimbs<WBN>;
   static constexpr auto R   = cbn::detail::unary_encoding<nlimbs, nlimbs + 1, limb_type>();
   static constexpr auto Rsq = cbn::detail::unary_encoding<2 * nlimbs, 2 * nlimbs + 1, limb_type>();
@@ -32,6 +30,7 @@ template <concepts::wide_bignum WBN, concepts::bignum_cst P>
 struct wide_mgry_bignum
 {
   using wide_bignum_type = WBN;
+  using bignum_type = typename wide_bignum_type::value_type;
   using P_type = P;
 
   using constants_type = mgry_constants<wide_bignum_type, P_type>;
@@ -44,13 +43,20 @@ struct wide_mgry_bignum
     return wide_mgry_bignum{details::mgry_mul<P_type>(n, WBN{constants_type::Rsq_p})};
   }
 
-  /*WBN to_classical() const {
-    return details::mgry_reduce<P_type>(n_);
-  }*/
+  WBN to_classical() const {
+    // TODO: use the real reduction algorithm
+    constexpr WBN wbone{one()};
+    return details::mgry_mul<P_type>(n_, wbone);
+  }
 
   WBN const& wbn() const { return n_; }
 
 private:
+  static constexpr bignum_type one() {
+    auto ret = eve::zero(eve::as<bignum_type>());
+    eve::get<0>(ret) = 1;
+    return ret;
+  }
   WBN n_;
 };
 

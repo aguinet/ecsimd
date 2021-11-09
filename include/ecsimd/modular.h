@@ -17,7 +17,7 @@ template <concepts::wide_bignum WBN>
 auto mod_sub(WBN const& a, WBN const& b, WBN const& p)
 {
   const auto [sum, carry_sub] = sub(a,b);
-  return sub_if_above(sum, p, !carry_add);
+  return sub_if_above(sum, p, carry_sub);
 }
 
 } // ecsimd
