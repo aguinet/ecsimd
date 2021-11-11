@@ -65,6 +65,34 @@ TEST(Ops128, Binops) {
   EXPECT_TRUE(eve::all(DoSubIfAbove<WBN>("F0000000000000000000000000000003"_hex, "F0000000000000000000000000000004"_hex) ==
     wide_bignum_set1<WBN>("F0000000000000000000000000000003"_hex)));
 
+  {
+    constexpr std::array<uint8_t, 16> a[] = {
+      "F0000000000000000000000000000005"_hex,
+      "F0000000000000000000000000000004"_hex,
+      "F0000000000000000000000000000003"_hex,
+      "F0000000000000000000000000000002"_hex
+    };
+    const WBN wa{[&](auto i, auto _) { return bn_from_bytes_BE<bignum_128>(a[i]); }};
+
+    constexpr std::array<uint8_t, 16> b[] = {
+      "F0000000000000000000000000000004"_hex,
+      "F0000000000000000000000000000004"_hex,
+      "F0000000000000000000000000000004"_hex,
+      "F0000000000000000000000000000004"_hex
+    };
+    const WBN wb{[&](auto i, auto _) { return bn_from_bytes_BE<bignum_128>(b[i]); }};
+
+    constexpr std::array<uint8_t, 16> res[] = {
+      "00000000000000000000000000000001"_hex,
+      "00000000000000000000000000000000"_hex,
+      "F0000000000000000000000000000003"_hex,
+      "F0000000000000000000000000000002"_hex
+    };
+    const WBN wres{[&](auto i, auto _) { return bn_from_bytes_BE<bignum_128>(res[i]); }};
+
+    EXPECT_TRUE(eve::all(sub_if_above(wa, wb) == wres));
+  }
+
   // Multiplications
   EXPECT_TRUE(eve::all(DoMul<WBN>("ffffffffffffffffffffffffffffffff"_hex, "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"_hex) ==
     wide_bignum_set1<WDBN>("EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEED11111111111111111111111111111112"_hex)));
