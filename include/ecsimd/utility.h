@@ -32,21 +32,6 @@ consteval auto ar_to_is() {
 template </*concepts::array */auto const& ar>
 using array_to_integer_sequence_t = decltype(details::ar_to_is<ar>());
 
-template <concepts::bignum BN, class C>
-static auto bn_broadcast(eve::wide<bn_limb_t<BN>, C> const& low_vs) {
-  // low_vs represents the lowest limb of each bignum. Return bignums where
-  // each associated limb is broadcasted.
-  using WBN = eve::wide<BN, C>;
-  bn_limb_t<BN> low_vs_[C::value];
-  eve::store(low_vs, &low_vs_);
-  return WBN{ [&](auto i, auto _) {
-    const auto v = low_vs_[i];
-    BN ret;
-    kumi::for_each_index([&](auto _i, auto& m) { m = v; }, ret);
-    return ret;
-  } };
-}
-
 } // ecsimd
 
 #endif
