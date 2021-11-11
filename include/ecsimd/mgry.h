@@ -36,6 +36,8 @@ struct wide_mgry_bignum
 
   using constants_type = mgry_constants<wide_bignum_type, P_type>;
 
+  static const wide_bignum_type wide_P;
+
   wide_mgry_bignum(WBN const& n):
     n_(n)
   { }
@@ -61,11 +63,14 @@ private:
   WBN n_;
 };
 
+template <concepts::wide_bignum WBN, concepts::bignum_cst P>
+const WBN wide_mgry_bignum<WBN, P>::wide_P = WBN{P::value};
+
 namespace concepts {
 template <class T>
 concept wide_mgry_bignum = std::same_as<T, wide_mgry_bignum<typename T::wide_bignum_type, typename T::P_type>>;
 } // concepts
 
-} // ecsimd::mgry
+} // ecsimd
 
 #endif

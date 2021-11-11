@@ -1,5 +1,6 @@
 #include <ecsimd/mgry.h>
 #include <ecsimd/mgry_mul.h>
+#include <ecsimd/mgry_ops.h>
 #include <ecsimd/serialization.h>
 #include <ecsimd/literals.h>
 
@@ -89,4 +90,24 @@ TEST(Mgry, Mul) {
     const auto b = bn_from_bytes_BE<bignum_256>("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEFFFFFC2E"_hex);
     TestMul(a, b);
   }
+}
+
+TEST(Mgry, Ops) {
+  using WBN = wide_bignum<bignum_256>;
+  using WMBN = wide_mgry_bignum<WBN, P>;
+
+  const auto a = wide_bignum_set1<WBN>("FFFFFFFFFFFFFFFFFFFFFF000000000000000000000000000000000000000004"_hex);
+  const auto b = wide_bignum_set1<WBN>("FFFFFFFFFFFFFFFFFFFFFF000000000000000000000000000000000000000005"_hex);
+
+  const auto ma = WMBN::from_classical(a);
+  const auto mb = WMBN::from_classical(b);
+
+  const auto add = mgry_add(ma, mb);
+  EXPECT_TRUE(eve::all(add.to_classical() == wide_bignum_set1<WBN>("fffffffffffffffffffffe0000000000000000000000000000000001000003da"_hex)));
+
+  auto sub = mgry_sub(ma, mb);
+  EXPECT_TRUE(eve::all(sub.to_classical() == wide_bignum_set1<WBN>("fffffffffffffffffffffffffffffffffffffffffffffffffffffffefffffc2e"_hex)));
+
+  sub = mgry_sub(mb, ma);
+  EXPECT_TRUE(eve::all(sub.to_classical() == wide_bignum_set1<WBN>("0000000000000000000000000000000000000000000000000000000000000001"_hex)));
 }
