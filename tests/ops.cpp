@@ -133,14 +133,6 @@ TEST(Ops256, Mod) {
     const auto a = wide_bignum_set1<WBN>("fffffffffffffffffffffffffffffffffffffffffffffffffffffff000000000"_hex);
     const auto b = wide_bignum_set1<WBN>("ffeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"_hex);
     const auto sum = mod_add(a,b,p);
-
-    {
-      const auto buf = bn_to_bytes_BE(sum.get(0));
-      for (uint8_t v: buf) {
-        printf("%02X", v);
-      }
-      printf("\n");
-    }
     EXPECT_TRUE(eve::all(sum == wide_bignum_set1<WBN>("ffeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeedfeeeef2bf"_hex)));
   }
 }
