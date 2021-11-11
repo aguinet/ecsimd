@@ -130,8 +130,8 @@ namespace eve
 #if !defined(EVE_DOXYGEN_INVOKED)
     requires(!std::same_as<storage_type, std::remove_reference_t<Range>>)
 #endif
-                            : wide( std::begin(std::forward<Range>(r))
-                                  , std::end  (std::forward<Range>(r))
+                            : wide( std::begin(EVE_FWD(r))
+                                  , std::end  (EVE_FWD(r))
                                   )
     {}
 
@@ -214,7 +214,7 @@ namespace eve
     //==============================================================================================
     template<std::invocable<size_type,size_type> Generator>
     EVE_FORCEINLINE wide(Generator &&g) noexcept
-                  : storage_base( detail::fill(eve::as<wide>{}, std::forward<Generator>(g)) )
+                  : storage_base( detail::fill(eve::as<wide>{}, EVE_FWD(g)) )
     {}
 
     //! @brief Constructs a eve::wide by combining two eve::wide of half the current cardinal.
@@ -1099,16 +1099,27 @@ namespace eve
   //==============================================================================================
   // Product type Support
   //==============================================================================================
-  template<std::size_t I, typename T, typename N> EVE_FORCEINLINE auto& get(wide<T,N>& w) noexcept
-  requires( kumi::product_type<T> )
+  template<std::size_t I, kumi::product_type T, typename N>
+  EVE_FORCEINLINE auto& get(wide<T,N>& w) noexcept
   {
     return kumi::get<I>(w.storage());
   }
 
-  template<std::size_t I, typename T, typename N> EVE_FORCEINLINE auto get(wide<T,N> const& w) noexcept
-  requires( kumi::product_type<T> )
+  template<std::size_t ... Idx, kumi::product_type T, typename N>
+#if !defined(EVE_DOXYGEN_INVOKED)
+  requires( (Idx < kumi::size<T>::value) && ... )
+#endif
+  EVE_FORCEINLINE auto get(eve::wide<T, N> const& w) noexcept
   {
-    return kumi::get<I>(w.storage());
+    if constexpr( sizeof...(Idx) == 1)
+    {
+      return kumi::get<Idx...>(w.storage());
+    }
+    else
+    {
+      using U = kumi::tuple<std::tuple_element_t<Idx, T> ...>;
+      return eve::wide<U, N>( get<Idx>(w) ... );
+    }
   }
 
 #if !defined(EVE_DOXYGEN_INVOKED)
