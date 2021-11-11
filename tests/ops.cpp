@@ -142,15 +142,6 @@ TEST(Ops256, Mod) {
     auto res = mod_sub(a,b,p);
 
     EXPECT_TRUE(eve::all(res == wide_bignum_set1<WBN>("0011111111111111111111111111111111111111111111111111110111111112"_hex)));
-
-    res = mod_sub(b,a,p);
-    {
-      const auto buf = bn_to_bytes_BE(res.get(0));
-      for (uint8_t v: buf) {
-        printf("%02X", v);
-      }
-      printf("\n");
-    }
     EXPECT_TRUE(eve::all(res == wide_bignum_set1<WBN>("ffeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeefdeeeeeb1d"_hex)));
   }
 }
