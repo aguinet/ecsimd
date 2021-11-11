@@ -8,6 +8,8 @@
 #include <ctbignum/io.hpp>
 #include <ctbignum/relational_ops.hpp>
 
+#include <eve/function/all.hpp>
+
 #include <gtest/gtest.h>
 
 #include "tests.h"
@@ -24,12 +26,26 @@ struct P {
 constexpr auto P_cbn = P::value.cbn();
 using P_cbn_is = array_to_integer_sequence_t<P_cbn>;
 }
-/*
+
 TEST(Mgry, FromTo) {
-  const auto a = wide_bignum_set1<bignum_256, eve::fixed<4>>("eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"_hex);
-  const auto ma = wide_mgry_bignum<wide_bignum<bignum_256>, P>::from_classical(a);
+  using WBN = wide_bignum<bignum_256>;
+  using WMBN = wide_mgry_bignum<WBN, P>;
+  constexpr std::array<uint8_t, 32> bns[] = {
+    "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"_hex,
+    "0168db3a8eca3fd7d4d08943182e189aef318068ba8853d77cb49c17bae00c0e"_hex,
+    "2714dac0b974321b75d6ef64e7c3b118adb2801bf674282df5712cd2af390f79"_hex,
+    "a3fc64fece6f3e1effab4045a9a54faa49a228f787025f0ecb761145755cb2d0"_hex,
+    "3af178b78710adae9cc096188ed09c210078aaa7e965ef83d22a91f21fec4eb5"_hex,
+    "688c743cde3987e299d2b028038ddc12dc02e7033c9d3c8f4d20edf9544232aa"_hex,
+    "45e29166c6441f0fd27e3b85a205f1e102b025cc8e8ea158ab4885a22ed68905"_hex,
+  };
+  for (auto const& bn: bns) {
+    const auto a = wide_bignum_set1<WBN>(bn);
+    const auto ma = WMBN::from_classical(a);
+    const auto maback = ma.to_classical();
+    EXPECT_TRUE(eve::all(maback == a));
+  }
 }
-*/
 
 static void TestMul(bignum_256 const& a, bignum_256 const& b)
 {

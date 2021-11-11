@@ -59,6 +59,23 @@ struct bignum: details::eve_struct_nlimbs<
     return a;
   }
 
+  template <eve::like<bignum> T>
+  friend auto& operator|=(T& a, T const& b) {
+    eve::detail::for_<0,1,nlimbs>([&](auto i_) {
+      constexpr auto i = decltype(i_)::value;
+      get<i>(a) |= get<i>(b);
+    });
+    return a;
+  }
+
+  template <eve::like<bignum> T>
+  friend auto& operator^=(T& a, T const& b) {
+    eve::detail::for_<0,1,nlimbs>([&](auto i_) {
+      constexpr auto i = decltype(i_)::value;
+      get<i>(a) ^= get<i>(b);
+    });
+    return a;
+  }
 };
 
 using bignum_128 = bignum<uint32_t, 4>;

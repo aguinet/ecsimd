@@ -4,6 +4,7 @@
 #include <ecsimd/bignum.h>
 #include <ctbignum/slicing.hpp>
 #include <ctbignum/division.hpp>
+#include <eve/product_type.hpp>
 
 namespace ecsimd {
 
@@ -45,7 +46,7 @@ struct wide_mgry_bignum
 
   WBN to_classical() const {
     // TODO: use the real reduction algorithm
-    constexpr WBN wbone{one()};
+    const WBN wbone{one()};
     return details::mgry_mul<P_type>(n_, wbone);
   }
 
@@ -53,8 +54,8 @@ struct wide_mgry_bignum
 
 private:
   static constexpr bignum_type one() {
-    auto ret = eve::zero(eve::as<bignum_type>());
-    eve::get<0>(ret) = 1;
+    bignum_type ret = eve::zero(eve::as<bignum_type>());
+    get<0>(ret) = 1;
     return ret;
   }
   WBN n_;
