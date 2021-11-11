@@ -17,9 +17,9 @@ template <concepts::wide_bignum WBN>
 auto mod_sub(WBN const& a, WBN const& b, WBN const& p)
 {
   WBN diff;
-  eve::wide<bn_limb_t<WBN>, eve::cardinal_t<WBN>> carry_sub;
+  cmp_res_t<WBN> carry_sub;
   std::tie(diff, carry_sub) = sub(a,b);
-  const auto diff_add = add(diff, p);
+  const WBN diff_add = add_no_carry(diff, p);
 
   WBN ret;
   eve::detail::for_<0,1,bn_nlimbs<WBN>>([&](auto i_) {
