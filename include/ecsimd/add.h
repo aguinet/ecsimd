@@ -11,11 +11,9 @@ namespace ecsimd {
 template <concepts::wide_bignum WBN>
 static auto add(WBN const& a, WBN const& b)
 {
-  using limb_type = bn_limb_t<WBN>;
-  using C = typename WBN::cardinal_type;
   constexpr auto nlimbs = bn_nlimbs<WBN>;
 
-  eve::logical<eve::wide<limb_type, C>> carry_mask;
+  cmp_res_t<WBN> carry_mask;
   WBN ret;
   eve::detail::for_<0, 1, nlimbs>([&](auto i_) {
     constexpr auto i = decltype(i_)::value;

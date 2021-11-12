@@ -2,30 +2,25 @@
 #define ECSIMD_MGRY_H
 
 #include <ecsimd/bignum.h>
-#include <ctbignum/slicing.hpp>
-#include <ctbignum/division.hpp>
+#include <ecsimd/mgry_csts.h>
 #include <eve/product_type.hpp>
 
 namespace ecsimd {
-
-template <concepts::wide_bignum WBN, concepts::bignum_cst P>
-struct mgry_constants {
-  using limb_type = bn_limb_t<WBN>;
-  using BN = typename WBN::value_type;
-  static constexpr size_t nlimbs = bn_nlimbs<WBN>;
-  static constexpr auto R   = cbn::detail::unary_encoding<nlimbs, nlimbs + 1, limb_type>();
-  static constexpr auto Rsq = cbn::detail::unary_encoding<2 * nlimbs, 2 * nlimbs + 1, limb_type>();
-
-  static constexpr auto p = P::value.cbn();
-
-  static constexpr auto R_p   = BN::from(cbn::div(R, p).remainder);
-  static constexpr auto Rsq_p = BN::from(cbn::div(Rsq, p).remainder);
-};
 
 namespace details {
 template <concepts::bignum_cst P, concepts::wide_bignum WBN>
 WBN mgry_mul(WBN const& a, WBN const& b);
 } // details
+
+template <concepts::bignum_cst P>
+constexpr auto to_mgry(bn_t<P> const& v) {
+  using BN = bn_t<P>;
+  using WBN = wide_bignum<BN>;
+
+  const auto v_cbn = v.cbn();
+  const auto p = P::value.cbn();
+  return BN::from(cbn::div(v_cbn * mgry_constants<WBN, P>::R, p).remainder);
+}
 
 template <concepts::wide_bignum WBN, concepts::bignum_cst P>
 struct wide_mgry_bignum
@@ -36,15 +31,23 @@ struct wide_mgry_bignum
 
   using constants_type = mgry_constants<wide_bignum_type, P_type>;
 
-  static const wide_bignum_type wide_P;
+  wide_mgry_bignum() = default;
 
   wide_mgry_bignum(WBN const& n):
     n_(n)
   { }
 
+  static wide_mgry_bignum R() {
+    return wide_mgry_bignum{WBN{constants_type::R_p}};
+  }
+
   static wide_mgry_bignum from_classical(WBN const& n) {
     return wide_mgry_bignum{details::mgry_mul<P_type>(n, WBN{constants_type::Rsq_p})};
   }
+
+  wide_mgry_bignum sqr() const;
+  wide_mgry_bignum inverse() const;
+  std::optional<wide_mgry_bignum> sqrt() const;
 
   WBN to_classical() const {
     // TODO: use the real reduction algorithm
@@ -53,6 +56,11 @@ struct wide_mgry_bignum
   }
 
   WBN const& wbn() const { return n_; }
+  WBN& wbn() { return n_; }
+
+  auto operator<=>(wide_mgry_bignum const& o) const {
+    return wbn() <=> o.wbn();
+  }
 
 private:
   static constexpr bignum_type one() {
@@ -60,11 +68,9 @@ private:
     get<0>(ret) = 1;
     return ret;
   }
+
   WBN n_;
 };
-
-template <concepts::wide_bignum WBN, concepts::bignum_cst P>
-const WBN wide_mgry_bignum<WBN, P>::wide_P = WBN{P::value};
 
 namespace concepts {
 template <class T>

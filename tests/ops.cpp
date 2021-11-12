@@ -3,9 +3,12 @@
 #include <ecsimd/mul.h>
 #include <ecsimd/cmp.h>
 #include <ecsimd/modular.h>
+#include <ecsimd/shift.h>
+#include <ecsimd/swap.h>
 #include <ecsimd/serialization.h>
 #include <ecsimd/literals.h>
 
+#include <eve/logical.hpp>
 #include <eve/function/all.hpp>
 #include <eve/function/none.hpp>
 
@@ -72,7 +75,7 @@ TEST(Ops128, Binops) {
       "F0000000000000000000000000000003"_hex,
       "F0000000000000000000000000000002"_hex
     };
-    const WBN wa{[&](auto i, auto _) { return bn_from_bytes_BE<bignum_128>(a[i]); }};
+    const WBN wa{[&](auto i, auto _) { return bn_from_bytes_BE<bignum_128>(a[i%4]); }};
 
     constexpr std::array<uint8_t, 16> b[] = {
       "F0000000000000000000000000000004"_hex,
@@ -80,7 +83,7 @@ TEST(Ops128, Binops) {
       "F0000000000000000000000000000004"_hex,
       "F0000000000000000000000000000004"_hex
     };
-    const WBN wb{[&](auto i, auto _) { return bn_from_bytes_BE<bignum_128>(b[i]); }};
+    const WBN wb{[&](auto i, auto _) { return bn_from_bytes_BE<bignum_128>(b[i%4]); }};
 
     constexpr std::array<uint8_t, 16> res[] = {
       "00000000000000000000000000000001"_hex,
@@ -88,7 +91,7 @@ TEST(Ops128, Binops) {
       "F0000000000000000000000000000003"_hex,
       "F0000000000000000000000000000002"_hex
     };
-    const WBN wres{[&](auto i, auto _) { return bn_from_bytes_BE<bignum_128>(res[i]); }};
+    const WBN wres{[&](auto i, auto _) { return bn_from_bytes_BE<bignum_128>(res[i%4]); }};
 
     EXPECT_TRUE(eve::all(sub_if_above(wa, wb) == wres));
   }
@@ -106,6 +109,61 @@ TEST(Ops128, Binops) {
   EXPECT_TRUE(eve::all(DoGTE<WBN>("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"_hex, "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"_hex)));
 
   EXPECT_TRUE(eve::none(DoLT<WBN> ("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAB"_hex, "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"_hex)));
+}
+
+TEST(Ops128, Shifts) {
+  using WBN = wide_bignum<bignum_128>;
+
+  constexpr std::array<uint8_t, 16> a[] = {
+    "80000000800000008000000080000000"_hex,
+    "70000000800000001000000000000001"_hex,
+    "00000000000000000000000000000001"_hex,
+    "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF"_hex
+  };
+  const WBN wa{[&](auto i, auto _) { return bn_from_bytes_BE<bignum_128>(a[i%4]); }};
+
+  auto [shifted, carry] = shift_left_one(wa);
+  EXPECT_TRUE((eve::all(carry == cmp_res_t<WBN>{true, false, false, true})));
+
+  constexpr std::array<uint8_t, 16> ref[] = {
+    "00000001000000010000000100000000"_hex,
+    "80000001000000002000000000000002"_hex,
+    "00000000000000000000000000000002"_hex,
+    "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFE"_hex
+  };
+  const WBN wref{[&](auto i, auto _) { return bn_from_bytes_BE<bignum_128>(a[i%4]); }};
+  EXPECT_TRUE(eve::all(wa == wref));
+}
+
+TEST(Ops128, Swap) {
+  using WBN = wide_bignum<bignum_128>;
+
+  constexpr std::array<uint8_t, 16> as[] = {
+    "00000001000000010000000100000000"_hex,
+    "80000001000000002000000000000002"_hex,
+    "00000000000000000000000000000002"_hex,
+    "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFE"_hex
+  };
+  constexpr std::array<uint8_t, 16> bs[] = {
+    "FFFEEEE100AAAAA100DDDDD10FFFAAAA"_hex,
+    "8BBBB001000FFF002000AAAAAAA00002"_hex,
+    "DDDDDDDAAAAAAAFFFFFFF24566660002"_hex,
+    "0000000111111144444555555FFFFFFE"_hex
+  };
+  const WBN a{[&](auto i, auto _) { return bn_from_bytes_BE<bignum_128>(as[i%4]); }};
+  const WBN b{[&](auto i, auto _) { return bn_from_bytes_BE<bignum_128>(bs[i%4]); }};
+
+  const auto Z = eve::zero(eve::as<cmp_res_t<WBN>>());
+
+  auto aa = a; auto bb = b;
+  swap_if(Z, aa, bb);
+
+  EXPECT_TRUE(eve::all(aa == a));
+  EXPECT_TRUE(eve::all(bb == b));
+
+  swap_if(!Z, aa, bb);
+  EXPECT_TRUE(eve::all(aa == b));
+  EXPECT_TRUE(eve::all(bb == a));
 }
 
 TEST(Ops256, Binops) {
@@ -142,6 +200,12 @@ TEST(Ops256, Mod) {
     auto res = mod_sub(a,b,p);
 
     EXPECT_TRUE(eve::all(res == wide_bignum_set1<WBN>("0011111111111111111111111111111111111111111111111111110111111112"_hex)));
-    EXPECT_TRUE(eve::all(res == wide_bignum_set1<WBN>("ffeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeefdeeeeeb1d"_hex)));
+  }
+
+  {
+    const auto a = wide_bignum_set1<WBN>("fffffffffffffffffffffffffffffffffffffffffffffffffffffff000000000"_hex);
+    auto res = mod_shift_left_one(a,p);
+
+    EXPECT_TRUE(eve::all(res == wide_bignum_set1<WBN>("ffffffffffffffffffffffffffffffffffffffffffffffffffffffe1000003d1"_hex)));
   }
 }

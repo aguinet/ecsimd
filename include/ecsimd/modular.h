@@ -3,6 +3,7 @@
 
 #include <ecsimd/add.h>
 #include <ecsimd/sub.h>
+#include <ecsimd/shift.h>
 
 namespace ecsimd {
 
@@ -11,6 +12,13 @@ auto mod_add(WBN const& a, WBN const& b, WBN const& p)
 {
   const auto [sum, carry_add] = add(a,b);
   return sub_if_above(sum, p, !carry_add);
+}
+
+template <concepts::wide_bignum WBN>
+auto mod_shift_left_one(WBN const& a, WBN const& p)
+{
+  const auto [shifted, carry] = shift_left_one(a);
+  return sub_if_above(shifted, p, !carry);
 }
 
 template <concepts::wide_bignum WBN>

@@ -4,6 +4,7 @@
 #include <ecsimd/bignum.h>
 
 #include <eve/function/store.hpp>
+#include <eve/detail/meta.hpp>
 
 #include <utility>
 #include <type_traits>
@@ -31,6 +32,23 @@ consteval auto ar_to_is() {
 
 template </*concepts::array */auto const& ar>
 using array_to_integer_sequence_t = decltype(details::ar_to_is<ar>());
+
+template <std::unsigned_integral T, class C>
+static auto wide_uasr(eve::wide<T, C> uv, auto S) {
+  using Signed = eve::detail::make_integer_t<sizeof(T), signed>;
+  using SW = eve::wide<Signed, C>;
+  const auto sv = std::bit_cast<SW>(uv) >> S;
+  return std::bit_cast<eve::wide<T,C>>(sv);
+}
+
+template <std::unsigned_integral T, class C>
+static auto wide_mask_bit(eve::wide<T, C> v, auto B) {
+  using wide_ty = eve::wide<T,C>;
+  constexpr auto nbits = std::numeric_limits<T>::digits;
+
+  const auto wlsb = wide_ty{1};
+  return eve::logical<wide_ty>{wide_uasr(v << (nbits-B-1), 31)};
+}
 
 } // ecsimd
 

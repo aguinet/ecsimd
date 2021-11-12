@@ -1,6 +1,7 @@
 #ifndef ECSIMD_MGRY_MUL_H
 #define ECSIMD_MGRY_MUL_H
 
+#include <ecsimd/mgry_csts.h>
 #include <ecsimd/mul.h>
 #include <ecsimd/sub.h>
 #include <ecsimd/utility.h>
@@ -19,19 +20,27 @@
 namespace ecsimd::details {
 
 template <concepts::bignum_cst P_type>
-class mgry_constants {
+class mgry_mul_constants {
   static constexpr auto P = P_type::value;
   static constexpr auto P_cbn = P.cbn();
   using BN = std::decay_t<decltype(P)>;
   using limb_type = bn_limb_t<BN>;
+  static constexpr auto nlimbs = bn_nlimbs<BN>;
 
   static constexpr auto inv = cbn::mod_inv(
     array_to_integer_sequence_t<P_cbn>{},
     std::integer_sequence<limb_type, 0, 1>{}); // 2**32
 
+  using bignum_p1 = bignum<limb_type, nlimbs+1>;
+
 public:
   static constexpr limb_type mprime = -inv[0];
+  static constexpr auto PNp1 = bignum_p1::from(cbn::detail::pad<1>(P.cbn()));
+  static const wide_bignum<bn_limb_t<P_type>> wide_mprime;
 };
+
+template <concepts::bignum_cst P_type>
+const wide_bignum<bn_limb_t<P_type>> mgry_mul_constants<P_type>::wide_mprime = wide_bignum<bn_limb_t<P_type>>{mgry_mul_constants<P_type>::mprime};
 
 template <concepts::bignum_cst P_type, concepts::wide_bignum WBN>
 __attribute__((noinline)) WBN mgry_mul(WBN const& x, WBN const& y) {
@@ -42,15 +51,15 @@ __attribute__((noinline)) WBN mgry_mul(WBN const& x, WBN const& y) {
   using cardinal = eve::cardinal_t<WBN>;
   using bignum_p1 = bignum<limb_type, nlimbs+1>;
   using wide_bignum_p1 = wide_bignum<bignum_p1>;
+  using mul_csts = mgry_mul_constants<P_type>;
 
   constexpr auto P = P_type::value;
-  constexpr auto PNp1 = bignum_p1::from(cbn::detail::pad<1>(P.cbn()));
-  constexpr auto mprime = mgry_constants<P_type>::mprime;
 
   using wide_limb_type = eve::wide<limb_type, cardinal>;
   using wide_dbl_limb_type = eve::wide<dbl_limb_type, cardinal>;
 
-  const wide_limb_type wide_mprime(mprime);
+  wide_limb_type const& wide_mprime = mul_csts::wide_mprime;
+  WBN const& wide_P = mgry_constants<WBN, P_type>::wide_P;
 
   const auto wide_dbl_low_mask = wide_dbl_limb_type{static_cast<dbl_limb_type>(
           std::numeric_limits<limb_type>::max())};
@@ -68,7 +77,7 @@ __attribute__((noinline)) WBN mgry_mul(WBN const& x, WBN const& y) {
       z += eve::convert(eve::get<0>(A), eve::as<dbl_limb_type>());
       z += k;
 
-      auto z2 = mul_wide(wide_limb_type{kumi::get<0>(P)}, u_i);
+      auto z2 = mul_wide(eve::get<0>(wide_P), u_i);
       z2 += z & wide_dbl_low_mask;
       z2 += k2;
 
@@ -82,7 +91,7 @@ __attribute__((noinline)) WBN mgry_mul(WBN const& x, WBN const& y) {
         t += eve::convert(eve::get<j>(A), eve::as<dbl_limb_type>());
         t += k;
 
-        auto t2 = mul_wide(wide_limb_type{kumi::get<j>(P)}, u_i);
+        auto t2 = mul_wide(eve::get<j>(wide_P), u_i);
         t2 += t & wide_dbl_low_mask;
         t2 += k2;
         eve::get<j-1>(A) = eve::convert(t2, eve::as<limb_type>());
@@ -92,12 +101,21 @@ __attribute__((noinline)) WBN mgry_mul(WBN const& x, WBN const& y) {
       });
 
       const auto tmp = eve::convert(eve::get<nlimbs>(A), eve::as<dbl_limb_type>()) + k + k2;
-      // TODO: these two lines could be optimized with shuffles + stores
-      eve::get<nlimbs-1>(A) = eve::convert(tmp, eve::as<limb_type>());
-      eve::get<nlimbs>(A) = eve::convert(tmp >> limb_bits, eve::as<limb_type>());
+      if constexpr( eve::current_api == eve::avx2 ) {
+        // AVX2-specific optimisation. Some UB here, I don't honestly know how
+        // to write it w/o it...
+        // See https://godbolt.org/z/Yvhe6YdsM for the codegen improvement
+        __m256i vtmp = std::bit_cast<__m256i>(tmp);
+        vtmp = _mm256_permutevar8x32_epi32(vtmp, _mm256_set_epi32(7, 5, 3, 1, 6, 4, 2, 0));
+        _mm256_storeu_si256((__m256i*)&eve::get<nlimbs-1>(A), vtmp);
+      }
+      else {
+        eve::get<nlimbs-1>(A) = eve::convert(tmp, eve::as<limb_type>());
+        eve::get<nlimbs>(A) = eve::convert(tmp >> limb_bits, eve::as<limb_type>());
+      }
   });
 
-  return sub_if_above<nlimbs>(A, wide_bignum_p1{PNp1});
+  return sub_if_above<nlimbs>(A, wide_bignum_p1{mul_csts::PNp1});
 }
 
 } // ecsimd::details
