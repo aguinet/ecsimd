@@ -46,6 +46,14 @@ static auto DoGT  = [](auto const& v0, auto const& v1) { return DoFunc<WBN>(v0, 
 template <concepts::wide_bignum WBN>
 static auto DoGTE = [](auto const& v0, auto const& v1) { return DoFunc<WBN>(v0, v1, [](auto a, auto b) { return a >= b; }); };
 
+template <concepts::wide_bignum WBN, size_t N>
+static auto DoSqr(std::array<uint8_t, N> const& v0)
+{
+  static_assert(N == sizeof(typename WBN::value_type));
+  const auto wv0 = wide_bignum_set1<WBN>(v0);
+  return ecsimd::square(wv0);
+}
+
 TEST(Ops128, Binops) {
   using WBN = wide_bignum<bignum_128>;
   using WDBN = wide_bignum<bignum_256>;
@@ -99,6 +107,14 @@ TEST(Ops128, Binops) {
   // Multiplications
   EXPECT_TRUE(eve::all(DoMul<WBN>("ffffffffffffffffffffffffffffffff"_hex, "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"_hex) ==
     wide_bignum_set1<WDBN>("EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEED11111111111111111111111111111112"_hex)));
+
+  // Squares
+  EXPECT_TRUE(eve::all(DoSqr<WBN>("00000000000000000000000000000004"_hex) ==
+    wide_bignum_set1<WDBN>("0000000000000000000000000000000000000000000000000000000000000010"_hex)));
+  EXPECT_TRUE(eve::all(DoSqr<WBN>("ffffffffffffffffffffffffffffffff"_hex) ==
+    wide_bignum_set1<WDBN>("fffffffffffffffffffffffffffffffe00000000000000000000000000000001"_hex)));
+  EXPECT_TRUE(eve::all(DoSqr<WBN>("b59edca51009bb15c309b23171c102da"_hex) ==
+    wide_bignum_set1<WDBN>("80da06968299ac8e1bc23ef95d49c1469d01bb136df7c96b75ba357dc0bc21a4"_hex)));
 
   // Comparaisons
   EXPECT_TRUE(eve::all(DoLT<WBN> ("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"_hex, "BAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"_hex)));

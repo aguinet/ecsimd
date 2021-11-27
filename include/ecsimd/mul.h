@@ -2,11 +2,13 @@
 #define FPSIMD_BIGINT_MUL_H
 
 #include <eve/wide.hpp>
+#include <eve/function/all.hpp>
 #include <ecsimd/bignum.h>
 
 #include <immintrin.h>
 
 #include <bit>
+#include <cassert>
 
 namespace ecsimd {
 
@@ -35,6 +37,17 @@ static auto mul_wide(eve::wide<uint32_t, eve::fixed<4>> const a, eve::wide<uint3
   };
 #endif
   return std::bit_cast<eve::wide<uint64_t, eve::fixed<4>>>(ret);
+}
+
+static auto sqr_wide(eve::wide<uint32_t, eve::fixed<4>> const a) {
+#ifdef __AVX2__
+  const __m128i a_ = std::bit_cast<__m128i>(a);
+  const __m256i a64 = _mm256_cvtepu32_epi64(a);
+  const __m256i ret = _mm256_mul_epu32(a64, a64);
+  return std::bit_cast<eve::wide<uint64_t, eve::fixed<4>>>(ret);
+#else
+  return mul_wide(a,a);
+#endif
 }
 
 // HACK: temporarely home-made for Nx32 bits integers.
@@ -67,6 +80,58 @@ __attribute__((noinline)) static auto
       highprev = t >> limb_bits;
     });
     eve::get<i + nlimbs>(ret) = eve::convert(highprev, eve::as<limb_type>());
+  });
+  return ret;
+}
+
+template <size_t N>
+__attribute__((noinline)) static auto
+  square(eve::wide<bignum<uint32_t, N>, eve::fixed<4>> const& a)
+{
+  using limb_type = uint32_t;
+  using dbl_limb_type = uint64_t;
+  constexpr size_t nlimbs = N;
+  constexpr auto limb_bits = std::numeric_limits<limb_type>::digits;
+  using cardinal = eve::fixed<4>;
+  using WDL = eve::wide<dbl_limb_type, cardinal>;
+  using ret_type = eve::wide<bignum<limb_type, N*2>, cardinal>;
+
+  auto ret = eve::zero(eve::as<ret_type>());
+
+  // Compute the cross products
+  eve::detail::for_<0,1,nlimbs>([&](auto i_) {
+    constexpr auto i = decltype(i_)::value;
+
+    auto t = sqr_wide(eve::get<i>(a));
+    t += eve::convert(eve::get<2*i>(ret), eve::as<dbl_limb_type>());
+    eve::get<2*i>(ret) = eve::convert(t, eve::as<limb_type>());
+
+    WDL prevs[2];
+    prevs[0] = t >> limb_bits;
+    prevs[1] = eve::zero(eve::as<WDL>());
+
+    eve::detail::for_<i+1,1,nlimbs>([&](auto j_) {
+      constexpr auto j = decltype(j_)::value;
+      static_assert(i != j);
+      constexpr auto retlimb = i+j;
+
+      auto t = mul_wide(eve::get<i>(a), eve::get<j>(a));
+      const auto carry = t >> ((2*limb_bits)-1);
+      t <<= 1;
+      t += eve::convert(eve::get<retlimb>(ret), eve::as<dbl_limb_type>());
+      t += prevs[0];
+
+      eve::get<retlimb>(ret) = eve::convert(t, eve::as<limb_type>());
+
+      prevs[0] = prevs[1];
+      prevs[0] += t >> limb_bits;
+      prevs[1] = carry;
+    });
+
+    eve::get<i+nlimbs>(ret) += eve::convert(prevs[0], eve::as<limb_type>()); // TODO: carry?
+    if constexpr ((i+nlimbs+1) < (2*nlimbs)) {
+      eve::get<i+nlimbs+1>(ret) = eve::convert(prevs[1], eve::as<limb_type>());
+    }
   });
   return ret;
 }
