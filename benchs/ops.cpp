@@ -42,6 +42,15 @@ void bench_mul(benchmark::State& S) {
 }
 
 template <class Bignum>
+void bench_sqr(benchmark::State& S) {
+  wide_bignum<Bignum> bn([](auto i, auto _) { return random_bn<Bignum>(); });
+
+  for (auto _: S) {
+    benchmark::DoNotOptimize(square(bn));
+  }
+}
+
+template <class Bignum>
 void bench_add(benchmark::State& S) {
   wide_bignum<Bignum> bn0([](auto i, auto _) { return random_bn<Bignum>(); });
   wide_bignum<Bignum> bn1([](auto i, auto _) { return random_bn<Bignum>(); });
@@ -69,6 +78,8 @@ int main(int argc, char** argv)
 
   benchmark::RegisterBenchmark("mul_128", &bench_mul<bignum_128>);
   benchmark::RegisterBenchmark("mul_256", &bench_mul<bignum_256>);
+  
+  benchmark::RegisterBenchmark("sqr_256", &bench_sqr<bignum_256>);
 
   benchmark::RegisterBenchmark("mgry_mul_256", bench_mgry_mul);
 
