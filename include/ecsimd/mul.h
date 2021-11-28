@@ -87,17 +87,17 @@ __attribute__((noinline)) static auto
   return ret;
 }
 
-template <size_t N>
+template <concepts::wide_bignum WBN>
 __attribute__((noinline)) static auto
-  square(eve::wide<bignum<uint32_t, N>, eve::fixed<4>> const& a)
+  square(WBN const& a)
 {
-  using limb_type = uint32_t;
-  using dbl_limb_type = uint64_t;
-  constexpr size_t nlimbs = N;
+  using limb_type = bn_limb_t<WBN>;
+  using dbl_limb_type = eve::detail::upgrade_t<limb_type>;
+  constexpr size_t nlimbs = bn_nlimbs<WBN>;
   constexpr auto limb_bits = std::numeric_limits<limb_type>::digits;
-  using cardinal = eve::fixed<4>;
+  using cardinal = eve::cardinal_t<WBN>;
   using WDL = eve::wide<dbl_limb_type, cardinal>;
-  using ret_type = eve::wide<bignum<limb_type, N*2>, cardinal>;
+  using ret_type = eve::wide<bignum<limb_type, nlimbs*2>, cardinal>;
 
   auto ret = eve::zero(eve::as<ret_type>());
 
