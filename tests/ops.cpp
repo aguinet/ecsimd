@@ -54,6 +54,16 @@ static auto DoSqr(std::array<uint8_t, N> const& v0)
   return ecsimd::square(wv0);
 }
 
+template <concepts::wide_bignum WBN, size_t N>
+static auto DoLimbMul(std::array<uint8_t, N> const& v0, bn_limb_t<WBN> const v1)
+{
+  static_assert(N == sizeof(typename WBN::value_type));
+  const auto wv0 = wide_bignum_set1<WBN>(v0);
+  const auto wv1 = eve::wide<bn_limb_t<WBN>, eve::cardinal_t<WBN>>{v1};
+  return ecsimd::limb_mul(wv0, wv1);
+}
+
+
 TEST(Ops128, Binops) {
   using WBN = wide_bignum<bignum_128>;
   using WDBN = wide_bignum<bignum_256>;
@@ -107,6 +117,11 @@ TEST(Ops128, Binops) {
   // Multiplications
   EXPECT_TRUE(eve::all(DoMul<WBN>("ffffffffffffffffffffffffffffffff"_hex, "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"_hex) ==
     wide_bignum_set1<WDBN>("EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEED11111111111111111111111111111112"_hex)));
+
+  // Limb multiplication
+  using limb_mul_ret_ty = wide_bignum<bignum<bn_limb_t<WBN>, bn_nlimbs<WBN>+1>>;
+  EXPECT_TRUE(eve::all(DoLimbMul<WBN>("e43aba669166dad6a334ad6bb13a2c9c"_hex, 198769U) ==
+    wide_bignum_set1<limb_mul_ret_ty>("0002b436c2f33005f5c13775b7eefdc191e690dc"_hex)));
 
   // Squares
   EXPECT_TRUE(eve::all(DoSqr<WBN>("00000000000000000000000000000004"_hex) ==

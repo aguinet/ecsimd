@@ -53,7 +53,6 @@ static auto sqr_wide(eve::wide<uint32_t, eve::fixed<4>> const a) {
 #endif
 }
 
-// HACK: temporarely home-made for Nx32 bits integers.
 template <concepts::wide_bignum WBN>
 __attribute__((noinline)) static auto
   mul(WBN const& a, WBN const& b)
@@ -84,6 +83,35 @@ __attribute__((noinline)) static auto
     });
     eve::get<i + nlimbs>(ret) = eve::convert(highprev, eve::as<limb_type>());
   });
+  return ret;
+}
+
+template <concepts::wide_bignum WBN>
+__attribute__((noinline)) static auto
+  limb_mul(WBN const& a, eve::wide<bn_limb_t<WBN>, eve::cardinal_t<WBN>> const b)
+{
+  using limb_type = bn_limb_t<WBN>;
+  using dbl_limb_type = eve::detail::upgrade_t<limb_type>;
+  constexpr size_t nlimbs = bn_nlimbs<WBN>;
+  constexpr auto limb_bits = std::numeric_limits<limb_type>::digits;
+  using cardinal = eve::cardinal_t<WBN>;
+  using ret_type = eve::wide<bignum<limb_type, nlimbs+1>, cardinal>;
+
+  auto ret = eve::zero(eve::as<ret_type>());
+
+  eve::wide<dbl_limb_type, cardinal> highprev;
+  eve::detail::for_<0, 1, nlimbs>([&](auto i_) {
+    constexpr auto i = decltype(i_)::value;
+
+    // TODO: zero extend of b could be done once. Is this optimized by the compiler?
+    auto t = mul_wide(eve::get<i>(a), b);
+    if constexpr (i > 0) {
+      t += highprev;
+    }
+    eve::get<i>(ret) = eve::convert(t, eve::as<limb_type>());
+    highprev = t >> limb_bits;
+  });
+  eve::get<nlimbs>(ret) = eve::convert(highprev, eve::as<limb_type>());
   return ret;
 }
 
