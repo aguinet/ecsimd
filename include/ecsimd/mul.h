@@ -63,8 +63,10 @@ static auto
   constexpr auto limb_bits = std::numeric_limits<limb_type>::digits;
   using cardinal = eve::cardinal_t<WBN>;
   using ret_type = eve::wide<bignum<limb_type, nlimbs*2>, cardinal>;
+  using ret_dbl_type = eve::wide<bignum<dbl_limb_type, nlimbs*2>, cardinal>;
 
-  auto ret = eve::zero(eve::as<ret_type>());
+  auto ret_dbl = eve::zero(eve::as<ret_dbl_type>());
+  const eve::wide<dbl_limb_type, cardinal> low_mask(std::numeric_limits<limb_type>::max());
 
   eve::detail::for_<0, 1, nlimbs>([&](auto i_) EVE_LAMBDA_FORCEINLINE {
     constexpr auto i = decltype(i_)::value;
@@ -74,14 +76,19 @@ static auto
       constexpr auto retlimb = i+j;
 
       auto t = mul_wide(eve::get<i>(a), eve::get<j>(b));
-      t += eve::convert(eve::get<retlimb>(ret), eve::as<dbl_limb_type>());
+      t += eve::get<retlimb>(ret_dbl);
       t += highprev;
-      // Chances are we can "hack" this to make it faster using an AVX2 shuffle + addition.
-      eve::get<retlimb>(ret) = eve::convert(t, eve::as<limb_type>());
+      eve::get<retlimb>(ret_dbl) = t & low_mask;
 
       highprev = t >> limb_bits;
     });
-    eve::get<i + nlimbs>(ret) = eve::convert(highprev, eve::as<limb_type>());
+    eve::get<i + nlimbs>(ret_dbl) = highprev;
+  });
+
+  ret_type ret;
+  eve::detail::for_<0,1,nlimbs*2>([&](auto i_) {
+    constexpr auto i = decltype(i_)::value;
+    eve::get<i>(ret) = eve::convert(eve::get<i>(ret_dbl), eve::as<limb_type>());
   });
   return ret;
 }

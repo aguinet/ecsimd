@@ -38,6 +38,7 @@ template <concepts::wide_mgry_bignum WMBN>
 WMBN mgry_sqr(WMBN const& v) {
   auto s = square(v.wbn());
   return WMBN{details::mgry_reduce<typename WMBN::P_type>(s)};
+  //return mgry_mul(v,v);
 }
 
 template <concepts::wide_bignum WBN, concepts::bignum_cst P>
