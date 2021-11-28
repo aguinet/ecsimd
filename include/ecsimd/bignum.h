@@ -50,7 +50,7 @@ struct bignum: details::eve_struct_nlimbs<
   static bignum from(limb_type const v0) {
     bignum ret;
     get<0>(ret) = v0;
-    eve::detail::for_<1,1,nlimbs>([&](auto i_) {
+    eve::detail::for_<1,1,nlimbs>([&](auto i_) EVE_LAMBDA_FORCEINLINE {
       constexpr auto i = decltype(i_)::value;
       get<i>(ret) = 0;
     });
