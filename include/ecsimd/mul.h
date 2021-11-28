@@ -3,6 +3,9 @@
 
 #include <eve/wide.hpp>
 #include <eve/function/all.hpp>
+#include <eve/detail/meta.hpp>
+#include <eve/traits/cardinal.hpp>
+
 #include <ecsimd/bignum.h>
 
 #include <immintrin.h>
@@ -51,16 +54,16 @@ static auto sqr_wide(eve::wide<uint32_t, eve::fixed<4>> const a) {
 }
 
 // HACK: temporarely home-made for Nx32 bits integers.
-template <size_t N>
+template <concepts::wide_bignum WBN>
 __attribute__((noinline)) static auto
-  mul(eve::wide<bignum<uint32_t, N>, eve::fixed<4>> const& a, eve::wide<bignum<uint32_t, N>, eve::fixed<4>> const& b)
+  mul(WBN const& a, WBN const& b)
 {
-  using limb_type = uint32_t;
-  using dbl_limb_type = uint64_t;
-  constexpr size_t nlimbs = N;
+  using limb_type = bn_limb_t<WBN>;
+  using dbl_limb_type = eve::detail::upgrade_t<limb_type>;
+  constexpr size_t nlimbs = bn_nlimbs<WBN>;
   constexpr auto limb_bits = std::numeric_limits<limb_type>::digits;
-  using cardinal = eve::fixed<4>;
-  using ret_type = eve::wide<bignum<uint32_t, N*2>, cardinal>;
+  using cardinal = eve::cardinal_t<WBN>;
+  using ret_type = eve::wide<bignum<limb_type, nlimbs*2>, cardinal>;
 
   auto ret = eve::zero(eve::as<ret_type>());
 

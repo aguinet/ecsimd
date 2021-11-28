@@ -32,7 +32,7 @@ static auto DoFunc(std::array<uint8_t, N> const& v0, std::array<uint8_t, N> cons
 template <concepts::wide_bignum WBN>
 static auto DoAdd = [](auto const& v0, auto const& v1) { return DoFunc<WBN>(v0, v1, &ecsimd::add_no_carry<WBN>); };
 template <concepts::wide_bignum WBN>
-static auto DoMul = [](auto const& v0, auto const& v1) { return DoFunc<WBN>(v0, v1, &ecsimd::mul<bn_nlimbs<WBN>>); };
+static auto DoMul = [](auto const& v0, auto const& v1) { return DoFunc<WBN>(v0, v1, &ecsimd::mul<WBN>); };
 template <concepts::wide_bignum WBN>
 static auto DoSub = [](auto const& v0, auto const& v1) { return DoFunc<WBN>(v0, v1, &ecsimd::sub_no_carry<WBN>); };
 template <concepts::wide_bignum WBN>
