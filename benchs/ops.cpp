@@ -36,8 +36,9 @@ void bench_mul(benchmark::State& S) {
   wide_bignum<Bignum> bn0([](auto i, auto _) { return random_bn<Bignum>(); });
   wide_bignum<Bignum> bn1([](auto i, auto _) { return random_bn<Bignum>(); });
 
+  auto func = [](auto const& a, auto const& b) __attribute__((noinline)) { return mul(a,b); };
   for (auto _: S) {
-    benchmark::DoNotOptimize(mul(bn0, bn1));
+    benchmark::DoNotOptimize(func(bn0, bn1));
   }
 }
 
@@ -48,8 +49,9 @@ void bench_mul_limb(benchmark::State& S) {
   WBN bn0([](auto i, auto _) { return random_bn<Bignum>(); });
   eve::wide<limb_t, eve::cardinal_t<WBN>> l([](auto i, auto _) { return std::uniform_int_distribution<limb_t>{}(g_rnd); });
 
+  auto func = [](auto const& a, auto const& b) __attribute__((noinline)) { return limb_mul(a,b); };
   for (auto _: S) {
-    benchmark::DoNotOptimize(limb_mul(bn0, l));
+    benchmark::DoNotOptimize(func(bn0, l));
   }
 }
 
@@ -57,8 +59,9 @@ template <class Bignum>
 void bench_sqr(benchmark::State& S) {
   wide_bignum<Bignum> bn([](auto i, auto _) { return random_bn<Bignum>(); });
 
+  auto func = [](auto const& a) __attribute__((noinline)) { return square(a); };
   for (auto _: S) {
-    benchmark::DoNotOptimize(square(bn));
+    benchmark::DoNotOptimize(func(bn));
   }
 }
 
@@ -67,8 +70,9 @@ void bench_add(benchmark::State& S) {
   wide_bignum<Bignum> bn0([](auto i, auto _) { return random_bn<Bignum>(); });
   wide_bignum<Bignum> bn1([](auto i, auto _) { return random_bn<Bignum>(); });
 
+  auto func = [](auto const& a, auto const& b) __attribute__((noinline)) { return add(a,b); };
   for (auto _: S) {
-    benchmark::DoNotOptimize(add(bn0, bn1));
+    benchmark::DoNotOptimize(func(bn0, bn1));
   }
 }
 
@@ -77,8 +81,9 @@ void bench_mgry_mul(benchmark::State& S) {
   wide_bignum<BN> bn0([](auto i, auto _) { return random_bn<BN, true>(); });
   wide_bignum<BN> bn1([](auto i, auto _) { return random_bn<BN, true>(); });
 
+  auto func = [](auto const& a, auto const& b) __attribute__((noinline)) { return details::mgry_mul<P>(a, b); };
   for (auto _: S) {
-    benchmark::DoNotOptimize(details::mgry_mul<P>(bn0, bn1));
+    benchmark::DoNotOptimize(func(bn0, bn1));
   }
 }
 
@@ -86,8 +91,9 @@ void bench_mgry_reduce(benchmark::State& S) {
   using BN = bignum_512;
   wide_bignum<BN> bn([](auto i, auto _) { return random_bn<BN, true>(); });
 
+  auto func = [](auto const& a) __attribute__((noinline)) { return details::mgry_reduce<P>(a); };
   for (auto _: S) {
-    benchmark::DoNotOptimize(details::mgry_reduce<P>(bn));
+    benchmark::DoNotOptimize(func(bn));
   }
 }
 

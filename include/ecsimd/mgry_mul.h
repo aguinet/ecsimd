@@ -2,6 +2,7 @@
 #define ECSIMD_MGRY_MUL_H
 
 #include <ecsimd/mgry_csts.h>
+#include <ecsimd/add.h>
 #include <ecsimd/mul.h>
 #include <ecsimd/sub.h>
 #include <ecsimd/shift.h>
@@ -45,7 +46,7 @@ template <concepts::bignum_cst P_type>
 const wide_bignum<bn_limb_t<P_type>> mgry_mul_constants<P_type>::wide_mprime = wide_bignum<bn_limb_t<P_type>>{mgry_mul_constants<P_type>::mprime};
 
 template <concepts::bignum_cst P_type, concepts::wide_bignum WBN>
-__attribute__((noinline)) WBN mgry_mul(WBN const& x, WBN const& y) {
+WBN mgry_mul(WBN const& x, WBN const& y) {
   using limb_type = bn_limb_t<WBN>;
   using dbl_limb_type = eve::detail::upgrade_t<limb_type>;
   constexpr auto limb_bits = std::numeric_limits<limb_type>::digits;
@@ -67,7 +68,7 @@ __attribute__((noinline)) WBN mgry_mul(WBN const& x, WBN const& y) {
           std::numeric_limits<limb_type>::max())};
 
   auto A = eve::zero(eve::as<wide_bignum_p1>());
-  eve::detail::for_<0, 1, nlimbs>([&](auto i_) {
+  eve::detail::for_<0, 1, nlimbs>([&](auto i_) EVE_LAMBDA_FORCEINLINE {
       constexpr auto i = decltype(i_)::value;
 
       const auto u_i = (eve::get<0>(A) + eve::get<i>(x) * eve::get<0>(y)) * wide_mprime;
@@ -86,7 +87,7 @@ __attribute__((noinline)) WBN mgry_mul(WBN const& x, WBN const& y) {
       k = z >> limb_bits;
       k2 = z2 >> limb_bits;
 
-      eve::detail::for_<1,1,nlimbs>([&](auto j_) {
+      eve::detail::for_<1,1,nlimbs>([&](auto j_) EVE_LAMBDA_FORCEINLINE {
         constexpr auto j = decltype(j_)::value;
 
         auto t = mul_wide(eve::get<j>(y), eve::get<i>(x));
@@ -121,7 +122,7 @@ __attribute__((noinline)) WBN mgry_mul(WBN const& x, WBN const& y) {
 }
 
 template <concepts::bignum_cst P_type, concepts::wide_bignum WBN>
-__attribute__((noinline,flatten)) auto mgry_reduce(WBN const& a)
+__attribute__((flatten)) auto mgry_reduce(WBN const& a)
 {
   static_assert(bn_nlimbs<WBN> == 2*bn_nlimbs<P_type>);
   static_assert(std::is_same_v<bn_limb_t<WBN>, bn_limb_t<P_type>>);
@@ -139,7 +140,7 @@ __attribute__((noinline,flatten)) auto mgry_reduce(WBN const& a)
 
   auto const& wide_P = mgry_constants<wide_ret_type, P_type>::wide_P;
 
-  eve::detail::for_<0,1,bn_nlimbs<P_type>>([&](auto i_) {
+  eve::detail::for_<0,1,bn_nlimbs<P_type>>([&](auto i_) EVE_LAMBDA_FORCEINLINE {
     constexpr auto i = decltype(i_)::value;
     auto prod = limb_mul(wide_P, eve::get<i>(accum) * mul_csts::wide_mprime);
     auto prod2 = limb_shift_left<bn_nlimbs<decltype(accum)>, i>(prod);

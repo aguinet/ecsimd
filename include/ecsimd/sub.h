@@ -18,7 +18,7 @@ auto sub(WBN const& a, WBN const& b)
 
   cmp_res_t<WBN> carry_mask;
   WBN ret;
-  eve::detail::for_<0, 1, nlimbs>([&](auto i_) {
+  eve::detail::for_<0, 1, nlimbs>([&](auto i_) EVE_LAMBDA_FORCEINLINE {
     constexpr auto i = decltype(i_)::value;
     const auto aa = eve::get<i>(a);
     const auto bb = eve::get<i>(b);
@@ -58,7 +58,7 @@ auto sub_if_above(WBN const& a, WBN const& p, Mask... additional_masks)
   }
 
   eve::wide<bignum<limb_type, nlimbs_out>, cardinal> ret;
-  eve::detail::for_<0,1,nlimbs_out>([&](auto i_) {
+  eve::detail::for_<0,1,nlimbs_out>([&](auto i_) EVE_LAMBDA_FORCEINLINE {
     constexpr auto i = decltype(i_)::value;
     const auto va = eve::get<i>(a);
     const auto vasub = eve::get<i>(asub);

@@ -54,7 +54,7 @@ static auto sqr_wide(eve::wide<uint32_t, eve::fixed<4>> const a) {
 }
 
 template <concepts::wide_bignum WBN>
-__attribute__((noinline)) static auto
+static auto
   mul(WBN const& a, WBN const& b)
 {
   using limb_type = bn_limb_t<WBN>;
@@ -66,10 +66,10 @@ __attribute__((noinline)) static auto
 
   auto ret = eve::zero(eve::as<ret_type>());
 
-  eve::detail::for_<0, 1, nlimbs>([&](auto i_) {
+  eve::detail::for_<0, 1, nlimbs>([&](auto i_) EVE_LAMBDA_FORCEINLINE {
     constexpr auto i = decltype(i_)::value;
     auto highprev = eve::zero(eve::as<eve::wide<dbl_limb_type, cardinal>>());
-    eve::detail::for_<0, 1, nlimbs>([&](auto j_) {
+    eve::detail::for_<0, 1, nlimbs>([&](auto j_) EVE_LAMBDA_FORCEINLINE {
       constexpr auto j = decltype(j_)::value;
       constexpr auto retlimb = i+j;
 
@@ -100,7 +100,7 @@ static auto
   auto ret = eve::zero(eve::as<ret_type>());
 
   eve::wide<dbl_limb_type, cardinal> highprev;
-  eve::detail::for_<0, 1, nlimbs>([&](auto i_) {
+  eve::detail::for_<0, 1, nlimbs>([&](auto i_) EVE_LAMBDA_FORCEINLINE {
     constexpr auto i = decltype(i_)::value;
 
     // TODO: zero extend of b could be done once. Is this optimized by the compiler?
@@ -116,7 +116,7 @@ static auto
 }
 
 template <concepts::wide_bignum WBN>
-__attribute__((noinline)) static auto
+static auto
   square(WBN const& a)
 {
   using limb_type = bn_limb_t<WBN>;
@@ -130,7 +130,7 @@ __attribute__((noinline)) static auto
   auto ret = eve::zero(eve::as<ret_type>());
 
   // Compute the cross products
-  eve::detail::for_<0,1,nlimbs>([&](auto i_) {
+  eve::detail::for_<0,1,nlimbs>([&](auto i_) EVE_LAMBDA_FORCEINLINE {
     constexpr auto i = decltype(i_)::value;
 
     auto t = sqr_wide(eve::get<i>(a));
@@ -141,7 +141,7 @@ __attribute__((noinline)) static auto
     prevs[0] = t >> limb_bits;
     prevs[1] = eve::zero(eve::as<WDL>());
 
-    eve::detail::for_<i+1,1,nlimbs>([&](auto j_) {
+    eve::detail::for_<i+1,1,nlimbs>([&](auto j_) EVE_LAMBDA_FORCEINLINE {
       constexpr auto j = decltype(j_)::value;
       static_assert(i != j);
       constexpr auto retlimb = i+j;

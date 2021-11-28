@@ -67,7 +67,7 @@ struct bignum: details::eve_struct_nlimbs<
 
   template <eve::like<bignum> T>
   friend auto& operator&=(T& a, T const& b) {
-    eve::detail::for_<0,1,nlimbs>([&](auto i_) {
+    eve::detail::for_<0,1,nlimbs>([&](auto i_) EVE_LAMBDA_FORCEINLINE {
       constexpr auto i = decltype(i_)::value;
       get<i>(a) &= get<i>(b);
     });
@@ -76,7 +76,7 @@ struct bignum: details::eve_struct_nlimbs<
 
   template <eve::like<bignum> T>
   friend auto& operator|=(T& a, T const& b) {
-    eve::detail::for_<0,1,nlimbs>([&](auto i_) {
+    eve::detail::for_<0,1,nlimbs>([&](auto i_) EVE_LAMBDA_FORCEINLINE {
       constexpr auto i = decltype(i_)::value;
       get<i>(a) |= get<i>(b);
     });
@@ -85,7 +85,7 @@ struct bignum: details::eve_struct_nlimbs<
 
   template <eve::like<bignum> T>
   friend auto& operator^=(T& a, T const& b) {
-    eve::detail::for_<0,1,nlimbs>([&](auto i_) {
+    eve::detail::for_<0,1,nlimbs>([&](auto i_) EVE_LAMBDA_FORCEINLINE {
       constexpr auto i = decltype(i_)::value;
       get<i>(a) ^= get<i>(b);
     });
