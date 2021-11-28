@@ -133,16 +133,18 @@ static auto
   using cardinal = eve::cardinal_t<WBN>;
   using WDL = eve::wide<dbl_limb_type, cardinal>;
   using ret_type = eve::wide<bignum<limb_type, nlimbs*2>, cardinal>;
+  using ret_dbl_type = eve::wide<bignum<dbl_limb_type, nlimbs*2>, cardinal>;
 
-  auto ret = eve::zero(eve::as<ret_type>());
+  auto ret_dbl = eve::zero(eve::as<ret_dbl_type>());
+  const eve::wide<dbl_limb_type, cardinal> low_mask(std::numeric_limits<limb_type>::max());
 
   // Compute the cross products
   eve::detail::for_<0,1,nlimbs>([&](auto i_) EVE_LAMBDA_FORCEINLINE {
     constexpr auto i = decltype(i_)::value;
 
     auto t = sqr_wide(eve::get<i>(a));
-    t += eve::convert(eve::get<2*i>(ret), eve::as<dbl_limb_type>());
-    eve::get<2*i>(ret) = eve::convert(t, eve::as<limb_type>());
+    t += eve::get<2*i>(ret_dbl);
+    eve::get<2*i>(ret_dbl) = t & low_mask;
 
     WDL prevs[2];
     prevs[0] = t >> limb_bits;
@@ -156,20 +158,26 @@ static auto
       auto t = mul_wide(eve::get<i>(a), eve::get<j>(a));
       const auto carry = t >> ((2*limb_bits)-1);
       t <<= 1;
-      t += eve::convert(eve::get<retlimb>(ret), eve::as<dbl_limb_type>());
+      t += eve::get<retlimb>(ret_dbl);
       t += prevs[0];
 
-      eve::get<retlimb>(ret) = eve::convert(t, eve::as<limb_type>());
+      eve::get<retlimb>(ret_dbl) = t & low_mask;
 
       prevs[0] = prevs[1];
       prevs[0] += t >> limb_bits;
       prevs[1] = carry;
     });
 
-    eve::get<i+nlimbs>(ret) += eve::convert(prevs[0], eve::as<limb_type>()); // TODO: carry?
+    eve::get<i+nlimbs>(ret_dbl) += prevs[0]; // TODO: carry?
     if constexpr ((i+nlimbs+1) < (2*nlimbs)) {
-      eve::get<i+nlimbs+1>(ret) = eve::convert(prevs[1], eve::as<limb_type>());
+      eve::get<i+nlimbs+1>(ret_dbl) = prevs[1];
     }
+  });
+
+  ret_type ret;
+  eve::detail::for_<0,1,nlimbs*2>([&](auto i_) {
+    constexpr auto i = decltype(i_)::value;
+    eve::get<i>(ret) = eve::convert(eve::get<i>(ret_dbl), eve::as<limb_type>());
   });
   return ret;
 }
