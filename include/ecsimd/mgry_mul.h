@@ -4,6 +4,7 @@
 #include <ecsimd/mgry_csts.h>
 #include <ecsimd/mul.h>
 #include <ecsimd/sub.h>
+#include <ecsimd/shift.h>
 #include <ecsimd/utility.h>
 #include <ecsimd/cmp.h>
 
@@ -16,6 +17,7 @@
 
 #include <utility>
 #include <limits>
+#include <iostream>
 
 namespace ecsimd::details {
 
@@ -116,6 +118,37 @@ __attribute__((noinline)) WBN mgry_mul(WBN const& x, WBN const& y) {
   });
 
   return sub_if_above<nlimbs>(A, wide_bignum_p1{mul_csts::PNp1});
+}
+
+template <concepts::bignum_cst P_type, concepts::wide_bignum WBN>
+__attribute__((noinline,flatten)) auto mgry_reduce(WBN const& a)
+{
+  static_assert(bn_nlimbs<WBN> == 2*bn_nlimbs<P_type>);
+  static_assert(std::is_same_v<bn_limb_t<WBN>, bn_limb_t<P_type>>);
+
+  using limb_type = bn_limb_t<WBN>;
+  using dbl_limb_type = eve::detail::upgrade_t<limb_type>;
+  constexpr auto limb_bits = std::numeric_limits<limb_type>::digits;
+  using cardinal = eve::cardinal_t<WBN>;
+  using mul_csts = mgry_mul_constants<P_type>;
+
+  using wide_limb_type = eve::wide<limb_type, cardinal>;
+  using wide_ret_type = wide_bignum<bignum<limb_type, bn_nlimbs<P_type>>>;
+
+  auto accum = pad<1>(a);
+
+  auto const& wide_P = mgry_constants<wide_ret_type, P_type>::wide_P;
+
+  eve::detail::for_<0,1,bn_nlimbs<P_type>>([&](auto i_) {
+    constexpr auto i = decltype(i_)::value;
+    auto prod = limb_mul(wide_P, eve::get<i>(accum) * mul_csts::wide_mprime);
+    auto prod2 = limb_shift_left<bn_nlimbs<decltype(accum)>, i>(prod);
+    accum = add_no_carry(accum, prod2);
+  });
+
+  auto result = limb_shift_right<bn_nlimbs<P_type>>(accum);
+  const auto wide_P_pad1 = pad<1>(wide_P);
+  return sub_if_above<bn_nlimbs<P_type>>(result, wide_P_pad1);
 }
 
 } // ecsimd::details

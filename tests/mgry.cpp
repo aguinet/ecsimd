@@ -93,6 +93,32 @@ TEST(Mgry, Mul) {
   }
 }
 
+static void TestMulReduce(bignum_256 const& a, bignum_256 const& b)
+{
+  using WBN  = wide_bignum<bignum_256>;
+  auto ma = WBN{a};
+  auto mb = WBN{b};
+
+  const auto vvec = ecsimd::details::mgry_reduce<P>(mul(ma, mb));
+  const auto v = cbn::montgomery_mul(a.cbn(),b.cbn(),P_cbn_is{});
+
+  EXPECT_EQ(vvec.get(0).cbn(), v);
+}
+
+TEST(Mgry, Reduce) {
+  {
+    const auto a = bn_from_bytes_BE<bignum_256>("0000000000000000000000000000000000000000000000000000000000000004"_hex);
+    const auto b = bn_from_bytes_BE<bignum_256>("0000000000000000000000000000000000000000000000000000000000000005"_hex);
+    TestMulReduce(a, b);
+  }
+
+  {
+    const auto a = bn_from_bytes_BE<bignum_256>("00000000000AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"_hex);
+    const auto b = bn_from_bytes_BE<bignum_256>("00000000000BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB"_hex);
+    TestMulReduce(a, b);
+  }
+}
+
 TEST(Mgry, Ops) {
   using WBN = wide_bignum<bignum_256>;
   using WMBN = wide_mgry_bignum<WBN, P>;

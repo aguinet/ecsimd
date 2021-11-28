@@ -42,6 +42,18 @@ void bench_mul(benchmark::State& S) {
 }
 
 template <class Bignum>
+void bench_mul_limb(benchmark::State& S) {
+  using WBN = wide_bignum<Bignum>;
+  using limb_t = bn_limb_t<WBN>;
+  WBN bn0([](auto i, auto _) { return random_bn<Bignum>(); });
+  eve::wide<limb_t, eve::cardinal_t<WBN>> l([](auto i, auto _) { return std::uniform_int_distribution<limb_t>{}(g_rnd); });
+
+  for (auto _: S) {
+    benchmark::DoNotOptimize(limb_mul(bn0, l));
+  }
+}
+
+template <class Bignum>
 void bench_sqr(benchmark::State& S) {
   wide_bignum<Bignum> bn([](auto i, auto _) { return random_bn<Bignum>(); });
 
@@ -70,6 +82,15 @@ void bench_mgry_mul(benchmark::State& S) {
   }
 }
 
+void bench_mgry_reduce(benchmark::State& S) {
+  using BN = bignum_512;
+  wide_bignum<BN> bn([](auto i, auto _) { return random_bn<BN, true>(); });
+
+  for (auto _: S) {
+    benchmark::DoNotOptimize(details::mgry_reduce<P>(bn));
+  }
+}
+
 } // anonymous
 
 int main(int argc, char** argv)
@@ -78,10 +99,13 @@ int main(int argc, char** argv)
 
   benchmark::RegisterBenchmark("mul_128", &bench_mul<bignum_128>);
   benchmark::RegisterBenchmark("mul_256", &bench_mul<bignum_256>);
-  
+  benchmark::RegisterBenchmark("mul_limb_256", &bench_mul_limb<bignum_256>);
+
   benchmark::RegisterBenchmark("sqr_256", &bench_sqr<bignum_256>);
 
   benchmark::RegisterBenchmark("mgry_mul_256", bench_mgry_mul);
+
+  benchmark::RegisterBenchmark("mgry_reduce_512", bench_mgry_reduce);
 
   benchmark::Initialize(&argc, argv);
   benchmark::RunSpecifiedBenchmarks();

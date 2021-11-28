@@ -87,7 +87,7 @@ __attribute__((noinline)) static auto
 }
 
 template <concepts::wide_bignum WBN>
-__attribute__((noinline)) static auto
+static auto
   limb_mul(WBN const& a, eve::wide<bn_limb_t<WBN>, eve::cardinal_t<WBN>> const b)
 {
   using limb_type = bn_limb_t<WBN>;
