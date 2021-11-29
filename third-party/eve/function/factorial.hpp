@@ -16,7 +16,7 @@ namespace eve
   //! @{
   //! @var factorial
   //!
-  //! @brief Callable object computing unsigned integral factorial \f$\displaystyle n! = \prod_{i=1}^n i\f$.
+  //! @brief Callable object computing factorial of  unsigned integers \f$\displaystyle n! = \prod_{i=1}^n i\f$.
   //!
   //! **Required header:** `#include <eve/function/factorial.hpp>`
   //!
@@ -24,26 +24,29 @@ namespace eve
   //!
   //! | Member       | Effect                                                     |
   //! |:-------------|:-----------------------------------------------------------|
-  //! | `operator()` | unsigned integral factorial                                |
+  //! | `operator()` |  factorial of  unsigned integers                           |
   //!
   //! ---
   //!
   //!  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~{.cpp}
-  //!  auto operator()( unsigned_value auto n ) const noexcept;
+  //!  auto operator()( value auto n ) const noexcept;
   //!  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   //!
   //! **Parameters**
   //!
-  //!`n`:   [unsigned value](@ref eve::value).
+  //!`n`:   [value](@ref eve::value) must be positive and flint (if floating point).
   //!
   //! **Return value**
   //!
-  //! The result [element type](eve::element_type) is always double to try to avoid overflow
-  //! and its cardinal is the same as the entry in case of an simd call.
+  //! If the entry is an [integral_value](eve::integral_value), the result [element type](eve::element_type)
+  //! is always double to try to avoid overflow and its cardinal is the same as the entry in case of an simd call.
+  //!
+  //! If the entry is a [floating_point_value](eve::floating_point_value) which must be a flint,
+  //! the result is of the same type as the entry.
   //!
   //!@warning
-  //!    this function will overflow as soon as the input is greater than 171
-  //!    Note that converting to float the result will overflow if is greater than 34
+  //!    this function will overflow as soon as the input is greater than 171 for integral or double entries
+  //!    and if the entry is greater than 34 for float.
   //!
   //! ---
   //!
