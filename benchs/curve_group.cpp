@@ -29,7 +29,8 @@ void bench_p256(benchmark::State& S) {
   const auto x = wide_bignum_set1<WBN>("0a891cecc2bf13b0aca744434a9c9f4bd7bf5c8ed86e2f76e7df72bad813bd80"_hex);
 
   for (auto _: S) {
-    benchmark::DoNotOptimize(CurveGroup::scalar_mult(x, WJG));
+    const auto WMP = CurveGroup::scalar_mult(x, WJG);
+    benchmark::DoNotOptimize(WMP.to_affine());
   }
 }
 
