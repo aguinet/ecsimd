@@ -107,6 +107,7 @@ int main(int argc, char** argv)
   benchmark::RegisterBenchmark("mul_256", &bench_mul<bignum_256>);
   benchmark::RegisterBenchmark("mul_limb_256", &bench_mul_limb<bignum_256>);
 
+  benchmark::RegisterBenchmark("sqr_128", &bench_sqr<bignum_128>);
   benchmark::RegisterBenchmark("sqr_256", &bench_sqr<bignum_256>);
 
   benchmark::RegisterBenchmark("mgry_mul_256", bench_mgry_mul);
