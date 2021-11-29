@@ -21,6 +21,7 @@ struct curve_group;
 template <concepts::wst_curve_am3 Curve>
 struct curve_group<Curve> {
   using WBN  = curve_wide_bn_t<Curve>;
+  using BN = typename WBN::value_type;
   using WMBN = curve_wide_mgry_bn_t<Curve>;
   using gfp = GFp<typename Curve::P>;
 
@@ -184,7 +185,7 @@ struct curve_group<Curve> {
     return ZADDU(P, dbl);
   }
 
-  // Scalar multiplication.
+  // Scalar multiplication, 4 scalars x 4 points
   static WJCP scalar_mult(WBN const& x, WJCP P) {
     using limb_t = bn_limb_t<WBN>;
     using wide_limb_t = eve::wide<limb_t, eve::cardinal_t<WBN>>;
@@ -214,6 +215,39 @@ struct curve_group<Curve> {
     const auto meven = (eve::get<0>(x) & wlsb) == eve::zero(eve::as<wide_limb_t>());
     auto Psub = ADD_Z2_1(P, oppP);
     return if_else(meven, Psub, P);
+  }
+
+  // Scalar multiplication, 1 scalar x 4 points
+  static WJCP scalar_mult_1s(BN const& x, WJCP P) {
+    using limb_t = bn_limb_t<WBN>;
+    using wide_limb_t = eve::wide<limb_t, eve::cardinal_t<WBN>>;
+    constexpr auto limb_nbits = std::numeric_limits<limb_t>::digits;
+
+    const auto oppP = P.opposite();
+    auto base = TRPLU(P);
+
+    auto xbit = (kumi::get<0>(x) >> 1) & 1;
+    WJCP* R[2];
+    R[1-xbit] = &base;
+    R[xbit] = &P;
+
+    eve::detail::for_<0,1,bn_nlimbs<WBN>>([&](auto l_) EVE_LAMBDA_FORCEINLINE {
+      constexpr auto l = decltype(l_)::value;
+      auto const lx = kumi::get<l>(x);
+
+      size_t b = 0;
+      if constexpr (l == 0) {
+        b = 2;
+      }
+      for (; b < limb_nbits; ++b) {
+        xbit = (lx >> b) & 1;
+        *R[1-xbit] = ZDAU(*R[1-xbit], *R[xbit]);
+      }
+    });
+
+    xbit = kumi::get<0>(x) & 1;
+    *R[xbit] = ADD_Z2_1(*R[0], oppP);
+    return *R[0];
   }
 };
 
