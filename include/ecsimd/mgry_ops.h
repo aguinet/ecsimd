@@ -28,14 +28,14 @@ WMBN mgry_sub(WMBN const& a, WMBN const& b) {
 }
 
 template <concepts::wide_mgry_bignum WMBN>
-WMBN mgry_mul(WMBN const& a, WMBN const& b) {
+[[gnu::flatten]] WMBN mgry_mul(WMBN const& a, WMBN const& b) {
   auto m = mul(a.wbn(), b.wbn());
   return WMBN{details::mgry_reduce<typename WMBN::P_type>(m)};
   //return WMBN{details::mgry_mul<typename WMBN::P_type>(a.wbn(), b.wbn())};
 }
 
 template <concepts::wide_mgry_bignum WMBN>
-WMBN mgry_sqr(WMBN const& v) {
+[[gnu::flatten]] WMBN mgry_sqr(WMBN const& v) {
   auto s = square(v.wbn());
   return WMBN{details::mgry_reduce<typename WMBN::P_type>(s)};
   //return mgry_mul(v,v);

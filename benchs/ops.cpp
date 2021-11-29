@@ -2,6 +2,8 @@
 #include <ecsimd/add.h>
 #include <ecsimd/mul.h>
 #include <ecsimd/mgry_mul.h>
+#include <ecsimd/mgry.h>
+#include <ecsimd/mgry_ops.h>
 #include <ecsimd/serialization.h>
 #include <ecsimd/literals.h>
 
@@ -87,6 +89,17 @@ void bench_mgry_mul(benchmark::State& S) {
   }
 }
 
+void bench_mgry_sqr(benchmark::State& S) {
+  using BN = bignum_256;
+  wide_bignum<BN> bn([](auto i, auto _) { return random_bn<BN, true>(); });
+  wide_mgry_bignum<wide_bignum<BN>, P> wbn{bn};
+
+  auto func = [](auto const& a) __attribute__((noinline)) { return mgry_sqr(a); };
+  for (auto _: S) {
+    benchmark::DoNotOptimize(func(wbn));
+  }
+}
+
 void bench_mgry_reduce(benchmark::State& S) {
   using BN = bignum_512;
   wide_bignum<BN> bn([](auto i, auto _) { return random_bn<BN, true>(); });
@@ -111,6 +124,7 @@ int main(int argc, char** argv)
   benchmark::RegisterBenchmark("sqr_256", &bench_sqr<bignum_256>);
 
   benchmark::RegisterBenchmark("mgry_mul_256", bench_mgry_mul);
+  benchmark::RegisterBenchmark("mgry_sqr_256", bench_mgry_sqr);
 
   benchmark::RegisterBenchmark("mgry_reduce_512", bench_mgry_reduce);
 
