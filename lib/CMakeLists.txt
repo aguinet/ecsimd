@@ -1,0 +1,2 @@
+add_library(scalar_mult_p256 scalar_mult_p256.cpp)
+target_link_libraries(scalar_mult_p256 ecsimd)

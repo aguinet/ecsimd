@@ -24,5 +24,6 @@ set_target_properties(ecsimd PROPERTIES
 	CXX_STANDARD 20
 )
 
+add_subdirectory(lib)
 add_subdirectory(tests)
 add_subdirectory(benchs)
