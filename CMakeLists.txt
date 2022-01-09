@@ -32,3 +32,4 @@ add_subdirectory(benchs)
 
 add_executable(ecp256 src/ecp256.cpp)
 target_include_directories(ecp256 PRIVATE ${PROJECT_SOURCE_DIR}/third-party)
+target_link_libraries(ecp256 PRIVATE benchmark::benchmark)
