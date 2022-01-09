@@ -27,3 +27,6 @@ set_target_properties(ecsimd PROPERTIES
 add_subdirectory(lib)
 add_subdirectory(tests)
 add_subdirectory(benchs)
+
+add_executable(ecp256 src/ecp256.cpp)
+target_include_directories(ecp256 PRIVATE ${PROJECT_SOURCE_DIR}/third-party)
