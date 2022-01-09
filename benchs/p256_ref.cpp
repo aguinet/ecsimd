@@ -78,16 +78,18 @@ static void bench_openssl(benchmark::State& St) {
     return;
   }
 
-  EC_POINT* pub = EC_POINT_new(curve);
-  if (!EC_POINT_mul(curve, pub, prv, NULL, NULL, ctx)) {
+  EC_POINT* randp = EC_POINT_new(curve);
+  if (!EC_POINT_mul(curve, randp, prv, NULL, NULL, ctx)) {
     printf("error: EC_POINT_mul\n");
     return;
   }
 
+  EC_POINT* P = EC_POINT_new(curve);
   for (auto _: St) {
-    EC_POINT_mul(curve, pub, prv, NULL, NULL, ctx);
+    EC_POINT_mul(curve, P, NULL, randp, prv, ctx);
   }
-  EC_POINT_free(pub);
+  EC_POINT_free(randp);
+  EC_POINT_free(P);
   BN_free(prv);
   BN_free(order);
   BN_CTX_free(ctx);
