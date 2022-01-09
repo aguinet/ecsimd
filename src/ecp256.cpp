@@ -37,6 +37,7 @@ constexpr cbn_u512 to_cbn_512(u512 const& v) {
 }
 
 constexpr auto P = 115792089210356248762697446949407573530086143415290314195533631308867097853951_Z;
+constexpr auto cbn_P = cbn::to_big_int(P);
 constexpr auto R   = cbn::detail::unary_encoding<nlimbs, nlimbs + 1, limb_type>();
 constexpr auto Rsq = cbn::detail::unary_encoding<2 * nlimbs, 2 * nlimbs + 1, limb_type>();
 constexpr auto Rsq_p = cbn::div(Rsq, P).remainder;
@@ -50,6 +51,14 @@ cbn_u256 mgry_mul(cbn_u256 const& a, cbn_u256 const& b) {
   const u256 wa = from_cbn(a);
   const u256 wb = from_cbn(b);
   return mgry_reduce(to_cbn_512(wa*wb));
+}
+
+cbn_u256 mgry_add(cbn_u256 const& a, cbn_u256 const& b) {
+  return cbn::mod_add(a,b,cbn_P);
+}
+
+cbn_u256 mgry_sub(cbn_u256 const& a, cbn_u256 const& b) {
+  return cbn::mod_sub(a,b,cbn_P);
 }
 
 struct mgry_u256 {
@@ -87,6 +96,14 @@ mgry_u256 operator*(mgry_u256 const& a, mgry_u256 const& b) {
   return mgry_u256{mgry_mul(a.bn(), b.bn())};
 }
 
+mgry_u256 operator+(mgry_u256 const& a, mgry_u256 const& b) {
+  return mgry_u256{mgry_add(a.bn(), b.bn())};
+}
+
+mgry_u256 operator-(mgry_u256 const& a, mgry_u256 const& b) {
+  return mgry_u256{mgry_sub(a.bn(), b.bn())};
+}
+
 cbn_u256 rnd_u256() {
   cbn_u256 ret;
   getentropy(&ret, sizeof(ret));
@@ -100,17 +117,17 @@ int main()
 {
   const cbn_u256 a = rnd_u256();
   const cbn_u256 b = rnd_u256();
-  const auto ref = cbn::mul(a,b)%cbn::to_big_int(P);
 
   const auto ma = mgry_u256::from_classical(a);
   const auto mb = mgry_u256::from_classical(b);
+
+  const auto mref = cbn::mul(a,b)%cbn_P;
   const auto mmul = ma*mb;
   const cbn_u256 mul = mmul.to_classical();
 
-  std::cout << a << " + " << b << " % " << cbn::to_big_int(P) << std::endl;
-  std::cout << ref << std::endl;
-  std::cout << mul << std::endl;
-  std::cout << (ref == mul) << std::endl;
+  std::cout << (mref == mul) << std::endl;
+  std::cout << ((ma+mb).to_classical() == cbn::mod_add(a,b,cbn_P)) << std::endl;
+  std::cout << ((ma-mb).to_classical() == cbn::mod_sub(a,b,cbn_P)) << std::endl;
 
   return 0;
 }
