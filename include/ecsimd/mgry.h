@@ -3,6 +3,7 @@
 
 #include <ecsimd/bignum.h>
 #include <ecsimd/mgry_csts.h>
+#include <ecsimd/shift.h>
 #include <eve/product_type.hpp>
 
 namespace ecsimd {
@@ -10,6 +11,8 @@ namespace ecsimd {
 namespace details {
 template <concepts::bignum_cst P, concepts::wide_bignum WBN>
 WBN mgry_mul(WBN const& a, WBN const& b);
+template <concepts::bignum_cst P_type, concepts::wide_bignum WBN>
+auto mgry_reduce(WBN const& a);
 } // details
 
 template <concepts::bignum_cst P>
@@ -50,9 +53,8 @@ struct wide_mgry_bignum
   std::optional<wide_mgry_bignum> sqrt() const;
 
   WBN to_classical() const {
-    // TODO: use the real reduction algorithm
-    const WBN wbone{one()};
-    return details::mgry_mul<P_type>(n_, wbone);
+    auto zext = pad<bn_nlimbs<bignum_type>>(n_);
+    return details::mgry_reduce<P_type>(zext);
   }
 
   WBN const& wbn() const { return n_; }
@@ -63,12 +65,6 @@ struct wide_mgry_bignum
   }
 
 private:
-  static constexpr bignum_type one() {
-    bignum_type ret = eve::zero(eve::as<bignum_type>());
-    get<0>(ret) = 1;
-    return ret;
-  }
-
   WBN n_;
 };
 
