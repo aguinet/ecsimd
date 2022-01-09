@@ -73,7 +73,7 @@ struct mgry_u256 {
   }
 
   mgry_u256 sqr() const {
-    return mgry_u256{mgry_reduce(mul(n_,n_))};
+    return mgry_mul(n_,n_);
   }
 
   cbn_u256 to_classical() const {
