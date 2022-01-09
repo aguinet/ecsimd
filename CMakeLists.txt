@@ -26,6 +26,8 @@ set_target_properties(ecsimd PROPERTIES
 
 add_subdirectory(lib)
 add_subdirectory(tests)
+
+find_package(benchmark REQUIRED)
 add_subdirectory(benchs)
 
 add_executable(ecp256 src/ecp256.cpp)

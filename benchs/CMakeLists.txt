@@ -1,4 +1,3 @@
-find_package(benchmark REQUIRED)
 
 add_executable(bench_ops ops.cpp)
 target_link_libraries(bench_ops ecsimd benchmark::benchmark)
