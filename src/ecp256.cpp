@@ -54,9 +54,6 @@ constexpr cbn_u256 mgry_reduce(cbn_u512 const& n) {
 
 constexpr cbn_u256 mgry_mul(cbn_u256 const& a, cbn_u256 const& b) {
   return mgry_reduce(cbn::mul(a,b));
-  /*const u256 wa = from_cbn(a);
-  const u256 wb = from_cbn(b);
-  return mgry_reduce(to_cbn_512(wa*wb));*/
 }
 
 cbn_u256 mgry_add(cbn_u256 const& a, cbn_u256 const& b) {
