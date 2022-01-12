@@ -45,7 +45,8 @@ struct wide_mgry_bignum
   }
 
   static wide_mgry_bignum from_classical(WBN const& n) {
-    return wide_mgry_bignum{details::mgry_mul<P_type>(n, WBN{constants_type::Rsq_p})};
+    const auto m = mul(n, WBN{constants_type::Rsq_p});
+    return wide_mgry_bignum{details::mgry_reduce<P_type>(m)};
   }
 
   wide_mgry_bignum sqr() const;

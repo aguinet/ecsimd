@@ -24,11 +24,15 @@ struct mgry_constants {
   static constexpr auto Pm1_by_R_p = BN::from(cbn::div((p-cbn_type{1})*R, p).remainder);
 
   static const WBN wide_P;
+  static const wbn_zext_t<WBN> wide_P_zext;
 };
 
 
 template <concepts::wide_bignum WBN, concepts::bignum_cst P>
 const WBN mgry_constants<WBN, P>::wide_P = WBN{P::value};
+
+template <concepts::wide_bignum WBN, concepts::bignum_cst P>
+const wbn_zext_t<WBN> mgry_constants<WBN, P>::wide_P_zext = zext_u32x64(WBN{P::value});
 
 } // ecsimd
 

@@ -22,7 +22,7 @@
 
 namespace ecsimd::details {
 
-template <concepts::bignum_cst P_type>
+template <concepts::bignum_cst P_type, typename Cardinal>
 class mgry_mul_constants {
   static constexpr auto P = P_type::value;
   static constexpr auto P_cbn = P.cbn();
@@ -39,86 +39,46 @@ class mgry_mul_constants {
 public:
   static constexpr limb_type mprime = -inv[0];
   static constexpr auto PNp1 = bignum_p1::from(cbn::detail::pad<1>(P.cbn()));
-  static const wide_bignum<bn_limb_t<P_type>> wide_mprime;
+  static const eve::wide<bn_limb_t<P_type>, Cardinal> wide_mprime;
+  static const eve::wide<eve::detail::upgrade_t<bn_limb_t<P_type>>, Cardinal> wide_mprime_zext;
 };
 
-template <concepts::bignum_cst P_type>
-const wide_bignum<bn_limb_t<P_type>> mgry_mul_constants<P_type>::wide_mprime = wide_bignum<bn_limb_t<P_type>>{mgry_mul_constants<P_type>::mprime};
+template <concepts::bignum_cst P_type, typename Cardinal>
+const eve::wide<bn_limb_t<P_type>, Cardinal> mgry_mul_constants<P_type, Cardinal>::wide_mprime = eve::wide<bn_limb_t<P_type>, Cardinal>{mgry_mul_constants<P_type, Cardinal>::mprime};
 
-template <concepts::bignum_cst P_type, concepts::wide_bignum WBN>
-WBN mgry_mul(WBN const& x, WBN const& y) {
-  using limb_type = bn_limb_t<WBN>;
-  using dbl_limb_type = eve::detail::upgrade_t<limb_type>;
-  constexpr auto limb_bits = std::numeric_limits<limb_type>::digits;
+template <concepts::bignum_cst P_type, typename Cardinal>
+const eve::wide<eve::detail::upgrade_t<bn_limb_t<P_type>>, Cardinal> mgry_mul_constants<P_type, Cardinal>::wide_mprime_zext = eve::convert(eve::wide<bn_limb_t<P_type>, Cardinal>{mgry_mul_constants<P_type, Cardinal>::mprime}, eve::as<eve::detail::upgrade_t<bn_limb_t<P_type>>>());
+
+template <concepts::wide_bignum WBN>
+static auto add_no_carry_u32_zext(WBN const& a, WBN const& b)
+{
   constexpr auto nlimbs = bn_nlimbs<WBN>;
+  using limb_type = bn_limb_t<WBN>;
+  using half_limb_type = eve::detail::downgrade_t<limb_type>;
   using cardinal = eve::cardinal_t<WBN>;
-  using bignum_p1 = bignum<limb_type, nlimbs+1>;
-  using wide_bignum_p1 = wide_bignum<bignum_p1>;
-  using mul_csts = mgry_mul_constants<P_type>;
+  constexpr auto half_nbits = std::numeric_limits<half_limb_type>::digits;
 
-  constexpr auto P = P_type::value;
-
-  using wide_limb_type = eve::wide<limb_type, cardinal>;
-  using wide_dbl_limb_type = eve::wide<dbl_limb_type, cardinal>;
-
-  wide_limb_type const& wide_mprime = mul_csts::wide_mprime;
-  WBN const& wide_P = mgry_constants<WBN, P_type>::wide_P;
-
-  const auto wide_dbl_low_mask = wide_dbl_limb_type{static_cast<dbl_limb_type>(
-          std::numeric_limits<limb_type>::max())};
-
-  auto A = eve::zero(eve::as<wide_bignum_p1>());
+  WBN ret;
   eve::detail::for_<0, 1, nlimbs>([&](auto i_) EVE_LAMBDA_FORCEINLINE {
-      constexpr auto i = decltype(i_)::value;
-
-      const auto u_i = (eve::get<0>(A) + eve::get<i>(x) * eve::get<0>(y)) * wide_mprime;
-
-      auto k = eve::zero(eve::as<wide_dbl_limb_type>());
-      auto k2 = eve::zero(eve::as<wide_dbl_limb_type>());
-
-      auto z = mul_wide(eve::get<0>(y), eve::get<i>(x));
-      z += eve::convert(eve::get<0>(A), eve::as<dbl_limb_type>());
-      z += k;
-
-      auto z2 = mul_wide(eve::get<0>(wide_P), u_i);
-      z2 += z & wide_dbl_low_mask;
-      z2 += k2;
-
-      k = z >> limb_bits;
-      k2 = z2 >> limb_bits;
-
-      eve::detail::for_<1,1,nlimbs>([&](auto j_) EVE_LAMBDA_FORCEINLINE {
-        constexpr auto j = decltype(j_)::value;
-
-        auto t = mul_wide(eve::get<j>(y), eve::get<i>(x));
-        t += eve::convert(eve::get<j>(A), eve::as<dbl_limb_type>());
-        t += k;
-
-        auto t2 = mul_wide(eve::get<j>(wide_P), u_i);
-        t2 += t & wide_dbl_low_mask;
-        t2 += k2;
-        eve::get<j-1>(A) = eve::convert(t2, eve::as<limb_type>());
-
-        k = t >> limb_bits;
-        k2 = t2 >> limb_bits;
-      });
-
-      const auto tmp = eve::convert(eve::get<nlimbs>(A), eve::as<dbl_limb_type>()) + k + k2;
-      if constexpr( eve::current_api == eve::avx2 ) {
-        // AVX2-specific optimisation. Some UB here, I don't honestly know how
-        // to write it w/o it...
-        // See https://godbolt.org/z/Yvhe6YdsM for the codegen improvement
-        __m256i vtmp = std::bit_cast<__m256i>(tmp);
-        vtmp = _mm256_permutevar8x32_epi32(vtmp, _mm256_set_epi32(7, 5, 3, 1, 6, 4, 2, 0));
-        _mm256_storeu_si256((__m256i*)&eve::get<nlimbs-1>(A), vtmp);
-      }
-      else {
-        eve::get<nlimbs-1>(A) = eve::convert(tmp, eve::as<limb_type>());
-        eve::get<nlimbs>(A) = eve::convert(tmp >> limb_bits, eve::as<limb_type>());
-      }
+    constexpr auto i = decltype(i_)::value;
+    const auto aa = eve::get<i>(a);
+    const auto bb = eve::get<i>(b);
+    const auto sum = aa + bb;
+    eve::get<i>(ret) = sum;
   });
 
-  return sub_if_above<nlimbs>(A, wide_bignum_p1{mul_csts::PNp1});
+  // Normalize to 32 bits limbs zexted to 64 bits
+  const eve::wide<limb_type, cardinal> low_mask(std::numeric_limits<half_limb_type>::max());
+  eve::detail::for_<1, 1, nlimbs>([&](auto i_) EVE_LAMBDA_FORCEINLINE {
+    constexpr auto i = decltype(i_)::value;
+    const auto prev = eve::get<i-1>(ret);
+    eve::get<i>(ret) += prev >> half_nbits;
+    eve::get<i-1>(ret) &= low_mask;
+  });
+  // TODO: is this necessary?
+  eve::get<nlimbs-1>(ret) &= low_mask;
+
+  return ret;
 }
 
 template <concepts::bignum_cst P_type, concepts::wide_bignum WBN>
@@ -128,27 +88,35 @@ __attribute__((flatten)) auto mgry_reduce(WBN const& a)
   static_assert(std::is_same_v<bn_limb_t<WBN>, bn_limb_t<P_type>>);
 
   using limb_type = bn_limb_t<WBN>;
-  using dbl_limb_type = eve::detail::upgrade_t<limb_type>;
-  constexpr auto limb_bits = std::numeric_limits<limb_type>::digits;
+  using half_limb_type = eve::detail::downgrade_t<limb_type>;
   using cardinal = eve::cardinal_t<WBN>;
-  using mul_csts = mgry_mul_constants<P_type>;
+  using half_P_type = remap_limb_t<P_type, half_limb_type>;
+  using mul_csts = mgry_mul_constants<half_P_type, cardinal>;
+  constexpr auto nlimbs = bn_nlimbs<P_type>;
+  constexpr auto half_nlimbs = bn_nlimbs<half_P_type>;
 
-  using wide_limb_type = eve::wide<limb_type, cardinal>;
-  using wide_ret_type = wide_bignum<bignum<limb_type, bn_nlimbs<P_type>>>;
+  using wide_half_type = wide_bignum<bignum<half_limb_type, half_nlimbs>>;
+  using wide_type = wide_bignum<bignum<limb_type, nlimbs>>;
 
-  auto accum = pad<1>(a);
+  const auto a_zext = zext_u32x64(a);
+  auto accum = pad<1>(a_zext);
+  constexpr auto nlimbs_accum = bn_nlimbs<decltype(accum)>;
 
-  auto const& wide_P = mgry_constants<wide_ret_type, P_type>::wide_P;
+  // TODO: make sure these converts happens at compile time
+  const auto& wide_P_zext = mgry_constants<wide_type, P_type>::wide_P_zext;
+  const auto& wide_mprime = mul_csts::wide_mprime_zext;
+  const eve::wide<limb_type, cardinal> low_mask(std::numeric_limits<half_limb_type>::max());
 
-  eve::detail::for_<0,1,bn_nlimbs<P_type>>([&](auto i_) EVE_LAMBDA_FORCEINLINE {
+  eve::detail::for_<0,1,half_nlimbs>([&](auto i_) EVE_LAMBDA_FORCEINLINE {
     constexpr auto i = decltype(i_)::value;
-    auto prod = limb_mul(wide_P, eve::get<i>(accum) * mul_csts::wide_mprime);
-    auto prod2 = limb_shift_left<bn_nlimbs<decltype(accum)>, i>(prod);
-    accum = add_no_carry(accum, prod2);
+    // '& low_mask' could be set to mullow, but limb_mul_zext already only considers the lowest 32bits
+    auto prod = limb_mul_zext(wide_P_zext, mullow(eve::get<i>(accum), wide_mprime));
+    auto prod2 = limb_shift_left<nlimbs_accum, i>(prod);
+    accum = add_no_carry_u32_zext(accum, prod2);
   });
 
-  auto result = limb_shift_right<bn_nlimbs<P_type>>(accum);
-  const auto wide_P_pad1 = pad<1>(wide_P);
+  auto result = trunc_u64x32(pad<1>(limb_shift_right<half_nlimbs>(accum)));
+  const auto wide_P_pad1 = pad<1>(mgry_constants<wide_type, P_type>::wide_P);
   return sub_if_above<bn_nlimbs<P_type>>(result, wide_P_pad1);
 }
 

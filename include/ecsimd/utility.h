@@ -47,7 +47,7 @@ static auto wide_mask_bit(eve::wide<T, C> v, auto B) {
   constexpr auto nbits = std::numeric_limits<T>::digits;
 
   const auto wlsb = wide_ty{1};
-  return eve::logical<wide_ty>{wide_uasr(v << (nbits-B-1), 31)};
+  return eve::logical<wide_ty>{wide_uasr(v << (nbits-B-1), nbits-1)};
 }
 
 } // ecsimd

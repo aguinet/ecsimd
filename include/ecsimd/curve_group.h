@@ -211,7 +211,7 @@ struct curve_group<Curve> {
       }
     });
 
-    const auto wlsb = wide_limb_t{1};
+    const auto wlsb = wide_limb_t{limb_t{1U}};
     const auto meven = (eve::get<0>(x) & wlsb) == eve::zero(eve::as<wide_limb_t>());
     auto Psub = ADD_Z2_1(P, oppP);
     return if_else(meven, Psub, P);

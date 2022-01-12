@@ -10,6 +10,7 @@
 #include <cstdint>
 #include <type_traits>
 #include <concepts>
+#include <bit>
 
 namespace ecsimd {
 
@@ -93,9 +94,9 @@ struct bignum: details::eve_struct_nlimbs<
   }
 };
 
-using bignum_128 = bignum<uint32_t, 4>;
-using bignum_256 = bignum<uint32_t, 8>;
-using bignum_512 = bignum<uint32_t, 16>;
+using bignum_128 = bignum<uint64_t, 2>;
+using bignum_256 = bignum<uint64_t, 4>;
+using bignum_512 = bignum<uint64_t, 8>;
 
 template <class Bignum>
 using wide_bignum = eve::wide<Bignum, eve::fixed<4>>;
@@ -139,6 +140,31 @@ namespace concepts {
 template <class T, class WBN>
 concept cmp_res = std::same_as<T, cmp_res_t<WBN>>;
 } // concepts
+
+namespace details {
+template <std::unsigned_integral LimbType, concepts::bignum BN>
+constexpr auto remap_limb(BN const& bn) {
+  using org_limb_type = bn_limb_t<BN>;
+  constexpr auto org_nlimbs = bn_nlimbs<BN>;
+  constexpr auto new_nlimbs = (sizeof(org_limb_type)*org_nlimbs)/sizeof(LimbType);
+  // TODO: what if big-endian?
+  return std::bit_cast<bignum<LimbType, new_nlimbs>>(bn);
+}
+} // details
+
+template <concepts::bignum_cst P, std::unsigned_integral LimbType>
+struct remap_limb
+{
+  struct type {
+    static constexpr auto value = details::remap_limb<LimbType>(P::value);
+  };
+};
+
+template <concepts::bignum_cst P, std::unsigned_integral LimbType>
+using remap_limb_t = typename remap_limb<P, LimbType>::type;
+
+template <concepts::wide_bignum WBN>
+using wbn_zext_t = wide_bignum<bignum<bn_limb_t<WBN>, bn_nlimbs<WBN>*2>>;
 
 } // ecsimd
 

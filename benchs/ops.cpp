@@ -78,17 +78,6 @@ void bench_add(benchmark::State& S) {
   }
 }
 
-void bench_mgry_mul(benchmark::State& S) {
-  using BN = bignum_256;
-  wide_bignum<BN> bn0([](auto i, auto _) { return random_bn<BN, true>(); });
-  wide_bignum<BN> bn1([](auto i, auto _) { return random_bn<BN, true>(); });
-
-  auto func = [](auto const& a, auto const& b) __attribute__((noinline)) { return details::mgry_mul<P>(a, b); };
-  for (auto _: S) {
-    benchmark::DoNotOptimize(func(bn0, bn1));
-  }
-}
-
 void bench_mgry_sqr(benchmark::State& S) {
   using BN = bignum_256;
   wide_bignum<BN> bn([](auto i, auto _) { return random_bn<BN, true>(); });
@@ -122,8 +111,6 @@ int main(int argc, char** argv)
 
   benchmark::RegisterBenchmark("sqr_128", &bench_sqr<bignum_128>);
   benchmark::RegisterBenchmark("sqr_256", &bench_sqr<bignum_256>);
-
-  benchmark::RegisterBenchmark("mgry_mul_256", bench_mgry_mul);
   benchmark::RegisterBenchmark("mgry_sqr_256", bench_mgry_sqr);
 
   benchmark::RegisterBenchmark("mgry_reduce_512", bench_mgry_reduce);

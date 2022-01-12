@@ -12,6 +12,9 @@ namespace ecsimd {
 
 template <concepts::wide_bignum WBN>
 auto shift_left_one(WBN const& a) {
+  using limb_type = bn_limb_t<WBN>;
+  constexpr auto limb_bits = std::numeric_limits<limb_type>::digits;
+
   cmp_res_t<WBN> carry;
   WBN ret;
   eve::detail::for_<0,1,bn_nlimbs<WBN>>([&](auto i_) EVE_LAMBDA_FORCEINLINE {
@@ -20,9 +23,9 @@ auto shift_left_one(WBN const& a) {
     const auto l = eve::get<i>(a);
     auto shifted = l << 1;
     if constexpr (i > 0) {
-      shifted |= carry.mask() & 1U;
+      shifted |= carry.mask() & limb_type{1};
     }
-    carry = wide_uasr(l, 31);
+    carry = wide_uasr(l, limb_bits-1);
     eve::get<i>(ret) = shifted;
   });
   return std::make_tuple(ret, carry);
