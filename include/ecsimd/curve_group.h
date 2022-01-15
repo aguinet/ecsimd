@@ -61,7 +61,7 @@ struct curve_group<Curve> {
   // https://eprint.iacr.org/2010/309.pdf.
 
   // Double-with-update (co-Z). P.z must be equal to mgry(1).
-  static WJCP DBLU(WJCP& P) {
+  [[gnu::flatten]] static WJCP DBLU(WJCP& P) {
     // TODO: assert z == mgry(1)
     auto& X1 = P.x();
     auto& Y1 = P.y();
@@ -88,7 +88,7 @@ struct curve_group<Curve> {
 
   // Co-Z Addition with updates. Return P + O, and updates P to get the same
   // Z coordinate as the returned point.
-  static WJCP ZADDU(WJCP& P, WJCP const& O) {
+  [[gnu::flatten]] static WJCP ZADDU(WJCP& P, WJCP const& O) {
     assert(eve::all(P.z().wbn() == O.z().wbn()));
     auto& Z = P.z();
     auto& X1 = P.x();
@@ -116,8 +116,8 @@ struct curve_group<Curve> {
   }
 
   // Co-Z doubling-addition with updates. Returns (2P+Q) and updates Q with
-  // same Z than returned point. 
-  static WJCP ZDAU(WJCP const& P, WJCP& Q) {
+  // same Z than returned point.
+  [[gnu::flatten]] static WJCP ZDAU(WJCP const& P, WJCP& Q) {
     assert(eve::all(P.z().wbn() == Q.z().wbn()));
     const auto& X1 = P.x();
     const auto& Y1 = P.y();

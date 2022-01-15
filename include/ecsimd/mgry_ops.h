@@ -16,6 +16,7 @@ template <size_t Count, concepts::wide_mgry_bignum WMBN>
 WMBN mgry_shift_left(WMBN const& a) {
   static_assert(Count > 0);
   WMBN ret(mod_shift_left_one(a.wbn(), WMBN::constants_type::wide_P));
+#pragma unroll
   for (size_t i = 1; i < Count; ++i) {
     ret.wbn() = mod_shift_left_one(ret.wbn(), WMBN::constants_type::wide_P);
   }
@@ -31,7 +32,6 @@ template <concepts::wide_mgry_bignum WMBN>
 [[gnu::flatten]] WMBN mgry_mul(WMBN const& a, WMBN const& b) {
   auto m = mul(a.wbn(), b.wbn());
   return WMBN{details::mgry_reduce<typename WMBN::P_type>(m)};
-  //return WMBN{details::mgry_mul<typename WMBN::P_type>(a.wbn(), b.wbn())};
 }
 
 template <concepts::wide_mgry_bignum WMBN>
