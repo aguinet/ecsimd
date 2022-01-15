@@ -54,10 +54,13 @@ constexpr cbn_u256 mgry_reduce(cbn_u512 const& n) {
 
 constexpr cbn_u256 mgry_mul(cbn_u256 const& a, cbn_u256 const& b) {
   return mgry_reduce(cbn::mul(a,b));
+  //return cbn::montgomery_mul(a,b,P);
 }
 
 constexpr cbn_u256 mgry_sqr(cbn_u256 const& a) {
-  return mgry_reduce(cbn::square(a));
+  return mgry_reduce(cbn::mul(a,a));
+  //return cbn::montgomery_mul(a,a,P);
+  //return mgry_reduce(cbn::mul(a,a));
 }
 
 cbn_u256 mgry_add(cbn_u256 const& a, cbn_u256 const& b) {
