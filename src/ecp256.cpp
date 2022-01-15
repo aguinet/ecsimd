@@ -56,6 +56,10 @@ constexpr cbn_u256 mgry_mul(cbn_u256 const& a, cbn_u256 const& b) {
   return mgry_reduce(cbn::mul(a,b));
 }
 
+constexpr cbn_u256 mgry_sqr(cbn_u256 const& a) {
+  return mgry_reduce(cbn::square(a));
+}
+
 cbn_u256 mgry_add(cbn_u256 const& a, cbn_u256 const& b) {
   return cbn::mod_add(a,b,cbn_P);
 }
@@ -76,7 +80,7 @@ struct mgry {
   }
 
   mgry sqr() const {
-    return mgry_mul(n_,n_);
+    return mgry_sqr(n_);
   }
 
   cbn_u256 to_classical() const {

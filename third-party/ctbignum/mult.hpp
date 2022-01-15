@@ -62,6 +62,49 @@ constexpr auto mul(big_int<M, T> u, big_int<N, T> v) {
   return w;
 }
 
+template <size_t padding_limbs = 0U, size_t M, typename T>
+__attribute__((noinline))
+constexpr auto square(big_int<M, T> u) {
+
+  using TT = typename dbl_bitlen<T>::type;
+  constexpr auto limb_bits = std::numeric_limits<T>::digits;
+
+  big_int<2*M + padding_limbs, T> w{};
+#pragma unroll
+  for (auto i = 0U; i < M; ++i) {
+    const auto uu = static_cast<TT>(u[i]);
+    TT t = uu*uu;
+    t += w[2*i];
+    w[2*i] = static_cast<T>(t);
+
+    T k[2];
+    k[0] = t >> limb_bits;
+    k[1] = 0;
+#pragma unroll
+    for (auto j = i+1; j < M; ++j) {
+      const auto retlimb = i+j;
+
+      TT t = uu*static_cast<TT>(u[j]);
+      const auto carry = t >> ((2*limb_bits)-1);
+      t <<= 1;
+      t += w[retlimb];
+      t += k[0];
+
+      w[retlimb] = static_cast<T>(t);
+
+      k[0] = k[1];
+      k[0] += t >> limb_bits;
+      k[1] = carry;
+    }
+
+    w[i+M] += k[0]; // TODO: carry?
+    if ((i+M+1) < (2*M)) {
+      w[i+M+1] = k[1];
+    }
+  }
+  return w;
+}
+
 template <size_t ResultLength, size_t M, size_t N, typename T>
 constexpr auto partial_mul(big_int<M, T> u, big_int<N, T> v) {
 
