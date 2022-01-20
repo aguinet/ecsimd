@@ -146,7 +146,7 @@ cbn_u256 fast_reduce(cbn_u512 const& n) {
   const gfp s5(std::bit_cast<cbn_u256>(cbn_u256_l32{a[9],a[10],a[11],a[13],a[14],a[15],a[13],a[8]}));
   const gfp s6(std::bit_cast<cbn_u256>(cbn_u256_l32{a[11],a[12],a[13],0,0,0,a[8],a[10]}));
   const gfp s7(std::bit_cast<cbn_u256>(cbn_u256_l32{a[12],a[13],a[14],a[15],0,0,a[9],a[11]}));
-  const gfp s8(std::bit_cast<cbn_u256>(cbn_u256_l32{a[14],a[14],a[15],a[8],a[9],a[10],0,a[12]}));
+  const gfp s8(std::bit_cast<cbn_u256>(cbn_u256_l32{a[13],a[14],a[15],a[8],a[9],a[10],0,a[12]}));
   const gfp s9(std::bit_cast<cbn_u256>(cbn_u256_l32{a[14],a[15],0,a[9],a[10],a[11],0,a[13]}));
 
   return (cbn::detail::first<4>(n)+gfp_shift_left<1>(s2)+gfp_shift_left<1>(s3)+s4+s5-s6-s7-s8-s9).bn();
@@ -428,9 +428,10 @@ void bench_p256(benchmark::State& S) {
   const cbn_u256 Gx = cbn::to_big_int(48439561293906451759052585252797914202762949526041747995844080717082404635286_Z);
   const cbn_u256 Gy = cbn::to_big_int(36134250956749795798585127919587881956611106672985015071877198253568414405109_Z);
   const curve_point G(Gx,Gy);
-  const auto JG = jacobian_curve_point::from_affine(G);
 
   for (auto _: S) {
+    const auto JG = jacobian_curve_point::from_affine(G);
+    benchmark::DoNotOptimize(JG);
     const auto P = scalar_mult(x, JG);
     benchmark::DoNotOptimize(P);
   }
