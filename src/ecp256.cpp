@@ -75,12 +75,12 @@ __attribute__((noinline)) cbn_u256 fast_reduce(cbn_u512 const& n) {
 #endif
 
 cbn_u256 fast_reduce(cbn_u512 const& n);
-cbn_u256 mul_mod(cbn_u256 const& a, cbn_u256 const& b) {
+[[gnu::flatten]] cbn_u256 mul_mod(cbn_u256 const& a, cbn_u256 const& b) {
   const auto m = cbn::mul(a,b);
   return fast_reduce(m);
 }
 
-cbn_u256 sqr_mod(cbn_u256 const& a) {
+[[gnu::flatten]] cbn_u256 sqr_mod(cbn_u256 const& a) {
   return mul_mod(a,a);
 }
 
@@ -134,6 +134,7 @@ gfp gfp_shift_left(gfp const& a) {
   return ret;
 }
 
+#if 1
 cbn_u256 fast_reduce(cbn_u512 const& n) {
   using cbn_u512_l32 = cbn::big_int<16, uint32_t>;
   using cbn_u256_l32 = cbn::big_int<8, uint32_t>;
@@ -150,6 +151,7 @@ cbn_u256 fast_reduce(cbn_u512 const& n) {
 
   return (cbn::detail::first<4>(n)+gfp_shift_left<1>(s2)+gfp_shift_left<1>(s3)+s4+s5-s6-s7-s8-s9).bn();
 }
+#endif
 
 
 struct curve_point {
@@ -279,7 +281,7 @@ JCP ZADDU(JCP& P, JCP const& O) {
 
 // Co-Z doubling-addition with updates. Returns (2P+Q) and updates Q with
 // same Z than returned point.
-JCP ZDAU(JCP const& P, JCP& Q) {
+__attribute__((noinline)) JCP ZDAU(JCP const& P, JCP& Q) {
   assert(P.z().bn() == O.z().bn());
   const auto& X1 = P.x();
   const auto& Y1 = P.y();
@@ -409,6 +411,17 @@ void bench_redc(benchmark::State& S) {
   }
 }
 
+void bench_redc_mgry(benchmark::State& S) {
+  const cbn_u256 a = cbn::mod(rnd_u256(), P);
+  const cbn_u256 b = cbn::mod(rnd_u256(), P);
+  const cbn_u512 m = cbn::mul(a,b);
+
+  for (auto _: S) {
+    const auto red = cbn::montgomery_reduction(m, P);
+    benchmark::DoNotOptimize(red);
+  }
+}
+
 void bench_p256(benchmark::State& S) {
   const cbn_u256 x = cbn::mod(rnd_u256(), P);
 
@@ -449,6 +462,7 @@ int main(int argc, char** argv)
   std::cout << "y=" << P.y() << std::endl;
 
   benchmark::RegisterBenchmark("redc", bench_redc);
+  benchmark::RegisterBenchmark("redc_mgry", bench_redc_mgry);
   benchmark::RegisterBenchmark("scalar_mult_p256", bench_p256)->Unit(benchmark::kMicrosecond);
 
   benchmark::Initialize(&argc, argv);

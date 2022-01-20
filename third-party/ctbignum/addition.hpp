@@ -153,6 +153,30 @@ constexpr auto mod_add(big_int<N, T> a, big_int<N, T> b,
 template <typename T, size_t N>
 constexpr auto mod_sub(big_int<N, T> a, big_int<N, T> b,
                        big_int<N, T> modulus) {
+#ifdef __clang__
+  if constexpr (std::is_same_v<T, uint64_t> && N == 4) {
+    using u256 = _ExtInt(256);
+    using u256_ar = big_int<N,T>;
+    uint64_t carryin=0, carryout;
+    uint64_t const* x = &a[0];
+    uint64_t const* y = &b[0];
+    u256_ar z;
+    z[0] = __builtin_subcl(x[0], y[0], carryin, &carryout);
+    carryin = carryout;
+    z[1] = __builtin_subcl(x[1], y[1], carryin, &carryout);
+    carryin = carryout;
+    z[2] = __builtin_subcl(x[2], y[2], carryin, &carryout);
+    carryin = carryout;
+    z[3] = __builtin_subcl(x[3], y[3], carryin, &carryout);
+
+    const uint64_t mask = -carryout;
+    const u256_ar m256{mask, mask, mask, mask};
+    const u256 pm = std::bit_cast<u256>(modulus) & std::bit_cast<u256>(m256);
+    const auto retmp = std::bit_cast<u256_ar>(std::bit_cast<u256>(z)+pm);
+    return retmp;
+  }
+#endif
+
   T carry{};
   big_int<N, T> r{};
 
