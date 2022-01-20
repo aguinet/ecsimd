@@ -44,6 +44,7 @@ constexpr cbn_u512 to_cbn_512(u512 const& v) {
 constexpr auto P = 115792089210356248762697446949407573530086143415290314195533631308867097853951_Z;
 constexpr auto cbn_P = cbn::to_big_int(P);
 
+#if 0
 __attribute__((noinline)) cbn_u256 fast_reduce(cbn_u512 const& n) {
   //return cbn::mod(n, P);
   using cbn_u512_l32 = cbn::big_int<16, uint32_t>;
@@ -71,7 +72,9 @@ __attribute__((noinline)) cbn_u256 fast_reduce(cbn_u512 const& n) {
   return cbn::detail::first<4>(ret);
   //return cbn::detail::first<4>(cbn::mod(ret, P));
 }
+#endif
 
+cbn_u256 fast_reduce(cbn_u512 const& n);
 cbn_u256 mul_mod(cbn_u256 const& a, cbn_u256 const& b) {
   const auto m = cbn::mul(a,b);
   return fast_reduce(m);
@@ -130,6 +133,24 @@ gfp gfp_shift_left(gfp const& a) {
   }
   return ret;
 }
+
+cbn_u256 fast_reduce(cbn_u512 const& n) {
+  using cbn_u512_l32 = cbn::big_int<16, uint32_t>;
+  using cbn_u256_l32 = cbn::big_int<8, uint32_t>;
+  const auto a = std::bit_cast<cbn_u512_l32>(n);
+
+  const gfp s2(std::bit_cast<cbn_u256>(cbn_u256_l32{0,0,0,a[11],a[12],a[13],a[14],a[15]}));
+  const gfp s3(std::bit_cast<cbn_u256>(cbn_u256_l32{0,0,0,a[12],a[13],a[14],a[15],0}));
+  const gfp s4(std::bit_cast<cbn_u256>(cbn_u256_l32{a[8],a[9],a[10],0,0,0,a[14],a[15]}));
+  const gfp s5(std::bit_cast<cbn_u256>(cbn_u256_l32{a[9],a[10],a[11],a[13],a[14],a[15],a[13],a[8]}));
+  const gfp s6(std::bit_cast<cbn_u256>(cbn_u256_l32{a[11],a[12],a[13],0,0,0,a[8],a[10]}));
+  const gfp s7(std::bit_cast<cbn_u256>(cbn_u256_l32{a[12],a[13],a[14],a[15],0,0,a[9],a[11]}));
+  const gfp s8(std::bit_cast<cbn_u256>(cbn_u256_l32{a[14],a[14],a[15],a[8],a[9],a[10],0,a[12]}));
+  const gfp s9(std::bit_cast<cbn_u256>(cbn_u256_l32{a[14],a[15],0,a[9],a[10],a[11],0,a[13]}));
+
+  return (cbn::detail::first<4>(n)+gfp_shift_left<1>(s2)+gfp_shift_left<1>(s3)+s4+s5-s6-s7-s8-s9).bn();
+}
+
 
 struct curve_point {
   curve_point() = default;
@@ -377,8 +398,19 @@ cbn_u512 rnd_u512() {
   return rnd_bn<cbn_u512>();
 }
 
+void bench_redc(benchmark::State& S) {
+  const cbn_u256 a = cbn::mod(rnd_u256(), P);
+  const cbn_u256 b = cbn::mod(rnd_u256(), P);
+  const cbn_u512 m = cbn::mul(a,b);
+
+  for (auto _: S) {
+    const auto red = fast_reduce(m);
+    benchmark::DoNotOptimize(red);
+  }
+}
+
 void bench_p256(benchmark::State& S) {
-  const cbn_u256 x = rnd_u256();
+  const cbn_u256 x = cbn::mod(rnd_u256(), P);
 
   const cbn_u256 Gx = cbn::to_big_int(48439561293906451759052585252797914202762949526041747995844080717082404635286_Z);
   const cbn_u256 Gy = cbn::to_big_int(36134250956749795798585127919587881956611106672985015071877198253568414405109_Z);
@@ -401,20 +433,22 @@ int main(int argc, char** argv)
   const curve_point G(Gx,Gy);
   const auto JG = jacobian_curve_point::from_affine(G);
 
-  const auto m = rnd_u512();
-  std::cout << "m=" << m << std::endl;
+  const auto a = cbn::mod(rnd_u256(), P);
+  const auto b = cbn::mod(rnd_u256(), P);
+  const auto m = a*b;
+  std::cout << "m= " << m << std::endl;
   const auto redref = cbn::mod(m,P);
   const auto redfast = fast_reduce(m);
-  std::cout << "m%p        =" << std::hex << redref << std::dec << std::endl;
-  std::cout << "fast_red(m)=" << std::hex << redfast << std::dec << std::endl;
+  std::cout << "m%p        = " << std::hex << redref << std::dec << std::endl;
+  std::cout << "fast_red(m)= " << std::hex << redfast << std::dec << std::endl;
   std::cout << (redref == redfast) << std::endl;
 
-  const auto a = rnd_u256();
   const auto P = scalar_mult(a, JG).to_affine();
   std::cout << "a=" << a << std::endl;
   std::cout << "x=" << P.x() << std::endl;
   std::cout << "y=" << P.y() << std::endl;
 
+  benchmark::RegisterBenchmark("redc", bench_redc);
   benchmark::RegisterBenchmark("scalar_mult_p256", bench_p256)->Unit(benchmark::kMicrosecond);
 
   benchmark::Initialize(&argc, argv);
