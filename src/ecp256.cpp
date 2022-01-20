@@ -44,8 +44,32 @@ constexpr cbn_u512 to_cbn_512(u512 const& v) {
 constexpr auto P = 115792089210356248762697446949407573530086143415290314195533631308867097853951_Z;
 constexpr auto cbn_P = cbn::to_big_int(P);
 
-cbn_u256 fast_reduce(cbn_u512 const& n) {
-  return cbn::mod(n, P);
+__attribute__((noinline)) cbn_u256 fast_reduce(cbn_u512 const& n) {
+  //return cbn::mod(n, P);
+  using cbn_u512_l32 = cbn::big_int<16, uint32_t>;
+  const auto n32 = std::bit_cast<cbn_u512_l32>(n);
+  cbn::big_int<16, uint64_t> a;
+  std::transform(n32.begin(), n32.end(), a.begin(), [](uint32_t const v) -> uint64_t { return static_cast<uint64_t>(v); });
+
+  const uint64_t l0 =              a[0]+a[8]+a[9]+2*a[10]+3*a[11]+5*a[12]+9*a[13]+15*a[14]+26*a[15];
+  const uint64_t l1 = (l0 >> 32) + a[1]+a[9]+a[10]+2*a[11]+3*a[12]+5*a[13]+9*a[14]+15*a[15];
+  const uint64_t l2 = (l1 >> 32) + a[2]+a[10]+a[11]+2*a[12]+3*a[13]+5*a[14]+9*a[15];
+  const uint64_t l3 = (l2 >> 32) + a[3]+a[8]+a[9]+2*a[10]+4*a[11]+6*a[12]+11*a[13]+18*a[14]+31*a[15];
+  const uint64_t l4 = (l3 >> 32) + a[4]+a[9]+a[10]+2*a[11]+4*a[12]+6*a[13]+11*a[14]+18*a[15];
+  const uint64_t l5 = (l4 >> 32) + a[5]+a[10]+a[11]+2*a[12]+4*a[13]+6*a[14]+11*a[15];
+  const uint64_t l6 = (l5 >> 32) + a[6]+a[8]+a[9]+2*a[10]+4*a[11]+6*a[12]+11*a[13]+19*a[14]+32*a[15];
+  const uint64_t l7 = (l6 >> 32) + a[7]+a[8]+2*a[9]+3*a[10]+5*a[11]+9*a[12]+15*a[13]+26*a[14]+45*a[15];
+
+  const uint64_t r0 = (l0&0xffffffff) | (l1<<32);
+  const uint64_t r1 = (l2&0xffffffff) | (l3<<32);
+  const uint64_t r2 = (l4&0xffffffff) | (l5<<32);
+  const uint64_t r3 = (l5&0xffffffff) | (l7<<32);
+  const uint64_t r4 = l7>>32;
+
+  // Subtract P
+  cbn::big_int<5,uint64_t> ret{r0,r1,r2,r3,r4};
+  return cbn::detail::first<4>(ret);
+  //return cbn::detail::first<4>(cbn::mod(ret, P));
 }
 
 cbn_u256 mul_mod(cbn_u256 const& a, cbn_u256 const& b) {
@@ -338,10 +362,19 @@ static JCP scalar_mult(cbn_u256 const& x, JCP P) {
 
 namespace {
 
+template <class T>
+T rnd_bn() {
+  T ret;
+  getentropy(&ret, sizeof(ret));
+  return ret;
+}
+
 cbn_u256 rnd_u256() {
-cbn_u256 ret;
-getentropy(&ret, sizeof(ret));
-return ret;
+  return rnd_bn<cbn_u256>();
+}
+
+cbn_u512 rnd_u512() {
+  return rnd_bn<cbn_u512>();
 }
 
 void bench_p256(benchmark::State& S) {
@@ -367,6 +400,14 @@ int main(int argc, char** argv)
   const cbn_u256 Gy = cbn::to_big_int(36134250956749795798585127919587881956611106672985015071877198253568414405109_Z);
   const curve_point G(Gx,Gy);
   const auto JG = jacobian_curve_point::from_affine(G);
+
+  const auto m = rnd_u512();
+  std::cout << "m=" << m << std::endl;
+  const auto redref = cbn::mod(m,P);
+  const auto redfast = fast_reduce(m);
+  std::cout << "m%p        =" << std::hex << redref << std::dec << std::endl;
+  std::cout << "fast_red(m)=" << std::hex << redfast << std::dec << std::endl;
+  std::cout << (redref == redfast) << std::endl;
 
   const auto a = rnd_u256();
   const auto P = scalar_mult(a, JG).to_affine();
