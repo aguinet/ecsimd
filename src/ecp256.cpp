@@ -9,6 +9,7 @@
 #include <ctbignum/io.hpp>
 #include <ctbignum/mod_inv.hpp>
 #include <ctbignum/invariant_div.hpp>
+#include <ctbignum/bitshift.hpp>
 
 #include <benchmark/benchmark.h>
 
@@ -43,36 +44,7 @@ constexpr cbn_u512 to_cbn_512(u512 const& v) {
 
 constexpr auto P = 115792089210356248762697446949407573530086143415290314195533631308867097853951_Z;
 constexpr auto cbn_P = cbn::to_big_int(P);
-
-#if 0
-__attribute__((noinline)) cbn_u256 fast_reduce(cbn_u512 const& n) {
-  //return cbn::mod(n, P);
-  using cbn_u512_l32 = cbn::big_int<16, uint32_t>;
-  const auto n32 = std::bit_cast<cbn_u512_l32>(n);
-  cbn::big_int<16, uint64_t> a;
-  std::transform(n32.begin(), n32.end(), a.begin(), [](uint32_t const v) -> uint64_t { return static_cast<uint64_t>(v); });
-
-  const uint64_t l0 =              a[0]+a[8]+a[9]+2*a[10]+3*a[11]+5*a[12]+9*a[13]+15*a[14]+26*a[15];
-  const uint64_t l1 = (l0 >> 32) + a[1]+a[9]+a[10]+2*a[11]+3*a[12]+5*a[13]+9*a[14]+15*a[15];
-  const uint64_t l2 = (l1 >> 32) + a[2]+a[10]+a[11]+2*a[12]+3*a[13]+5*a[14]+9*a[15];
-  const uint64_t l3 = (l2 >> 32) + a[3]+a[8]+a[9]+2*a[10]+4*a[11]+6*a[12]+11*a[13]+18*a[14]+31*a[15];
-  const uint64_t l4 = (l3 >> 32) + a[4]+a[9]+a[10]+2*a[11]+4*a[12]+6*a[13]+11*a[14]+18*a[15];
-  const uint64_t l5 = (l4 >> 32) + a[5]+a[10]+a[11]+2*a[12]+4*a[13]+6*a[14]+11*a[15];
-  const uint64_t l6 = (l5 >> 32) + a[6]+a[8]+a[9]+2*a[10]+4*a[11]+6*a[12]+11*a[13]+19*a[14]+32*a[15];
-  const uint64_t l7 = (l6 >> 32) + a[7]+a[8]+2*a[9]+3*a[10]+5*a[11]+9*a[12]+15*a[13]+26*a[14]+45*a[15];
-
-  const uint64_t r0 = (l0&0xffffffff) | (l1<<32);
-  const uint64_t r1 = (l2&0xffffffff) | (l3<<32);
-  const uint64_t r2 = (l4&0xffffffff) | (l5<<32);
-  const uint64_t r3 = (l5&0xffffffff) | (l7<<32);
-  const uint64_t r4 = l7>>32;
-
-  // Subtract P
-  cbn::big_int<5,uint64_t> ret{r0,r1,r2,r3,r4};
-  return cbn::detail::first<4>(ret);
-  //return cbn::detail::first<4>(cbn::mod(ret, P));
-}
-#endif
+constexpr auto cbn_4P = cbn::shift_left(cbn_P, 2);
 
 cbn_u256 fast_reduce(cbn_u512 const& n);
 [[gnu::flatten]] cbn_u256 mul_mod(cbn_u256 const& a, cbn_u256 const& b) {
@@ -135,6 +107,65 @@ gfp gfp_shift_left(gfp const& a) {
 }
 
 #if 1
+template <size_t N>
+auto select_mask(const bool P, cbn::big_int<N, uint64_t> const& True, cbn::big_int<N, uint64_t> const& False) {
+  const uint64_t tmask = -uint64_t{P};
+  const uint64_t fmask = ~tmask;
+  cbn::big_int<N, uint64_t> ret;
+  for (size_t i = 0; i < N; ++i) {
+    ret[i] = (True[i] & tmask) ^ (False[i] & fmask);
+  }
+  return ret;
+}
+
+template <size_t N>
+auto sub_if_above(cbn::big_int<N, uint64_t> const& a, cbn::big_int<N, uint64_t> const& p) {
+  uint64_t carryin, carryout=0;
+  uint64_t const* x = &a[0];
+  uint64_t const* y = &p[0];
+  cbn::big_int<N, uint64_t> z;
+#pragma unroll
+  for (size_t i = 0; i < N; ++i) {
+    carryin = carryout;
+    z[i] = __builtin_subcl(x[i], y[i], carryin, &carryout);
+  }
+  return select_mask(carryout, a, z);
+}
+
+[[gnu::flatten]] cbn_u256 fast_reduce(cbn_u512 const& n) {
+  //return cbn::mod(n, P);
+  using cbn_u512_l32 = cbn::big_int<16, uint32_t>;
+  const auto n32 = std::bit_cast<cbn_u512_l32>(n);
+  std::array<int64_t, 16> a;
+  std::transform(n32.begin(), n32.end(), a.begin(), [](uint32_t const v) -> int64_t { return static_cast<int64_t>(static_cast<uint64_t>(v)); });
+
+  const int64_t l0 =              a[0]+a[8]+a[9]-a[11]-a[12]-a[13]-a[14];
+  const int64_t l1 = (l0 >> 32) + a[1]+a[9]+a[10]-a[12]-a[13]-a[14]-a[15];
+  const int64_t l2 = (l1 >> 32) + a[2]+a[10]+a[11]-a[13]-a[14]-a[15];
+  const int64_t l3 = (l2 >> 32) + a[3]-a[8]-a[9]+2*a[11]+2*a[12]+a[13]-a[15];
+  const int64_t l4 = (l3 >> 32) + a[4]-a[9]-a[10]+2*a[12]+2*a[13]+a[14];
+  const int64_t l5 = (l4 >> 32) + a[5]-a[10]-a[11]+2*a[13]+2*a[14]+a[15];
+  const int64_t l6 = (l5 >> 32) + a[6]-a[8]-a[9]+a[13]+3*a[14]+2*a[15];
+  const int64_t l7 = (l6 >> 32) + a[7]+a[8]-a[10]-a[11]-a[12]-a[13]+3*a[15];
+
+  const cbn::big_int<5, uint64_t> r{
+      static_cast<uint64_t>((l0 & 0xFFFFFFFF) | (l1 << 32)),
+      static_cast<uint64_t>((l2 & 0xFFFFFFFF) | (l3 << 32)),
+      static_cast<uint64_t>((l4 & 0xFFFFFFFF) | (l5 << 32)),
+      static_cast<uint64_t>((l6 & 0xFFFFFFFF) | (l7 << 32)),
+      static_cast<uint64_t>(l7 >> 32)
+  };
+
+  const auto r64 = std::bit_cast<cbn::big_int<5,uint64_t>>(r);
+  auto ret = select_mask(l7 < 0, cbn::add_ignore_carry(r64, cbn_4P), r64);
+  constexpr auto cbn_P_pad1 = cbn::detail::pad<1>(cbn_P);
+  ret = sub_if_above(ret, cbn_P_pad1);
+  ret = sub_if_above(ret, cbn_P_pad1);
+  ret = sub_if_above(ret, cbn_P_pad1);
+  ret = sub_if_above(ret, cbn_P_pad1);
+  return cbn::detail::first<4>(ret);
+}
+#else
 cbn_u256 fast_reduce(cbn_u512 const& n) {
   using cbn_u512_l32 = cbn::big_int<16, uint32_t>;
   using cbn_u256_l32 = cbn::big_int<8, uint32_t>;
@@ -457,10 +488,10 @@ int main(int argc, char** argv)
   std::cout << "fast_red(m)= " << std::hex << redfast << std::dec << std::endl;
   std::cout << (redref == redfast) << std::endl;
 
-  const auto P = scalar_mult(a, JG).to_affine();
+  /*const auto P = scalar_mult(a, JG).to_affine();
   std::cout << "a=" << a << std::endl;
   std::cout << "x=" << P.x() << std::endl;
-  std::cout << "y=" << P.y() << std::endl;
+  std::cout << "y=" << P.y() << std::endl;*/
 
   benchmark::RegisterBenchmark("redc", bench_redc);
   benchmark::RegisterBenchmark("redc_mgry", bench_redc_mgry);

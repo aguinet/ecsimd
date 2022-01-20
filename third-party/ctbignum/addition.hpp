@@ -76,6 +76,13 @@ constexpr auto subtract_same(big_int<N, T> a, big_int<N, T> b) {
 template <typename T, size_t N>
 CBN_ALWAYS_INLINE
 constexpr auto add_ignore_carry(big_int<N, T> a, big_int<N, T> b) {
+#ifdef __clang__
+  if (!std::is_constant_evaluated()) {
+    using unsigned_bi = _ExtInt(sizeof(T)*N*8);
+    const unsigned_bi ret = std::bit_cast<unsigned_bi>(a) + std::bit_cast<unsigned_bi>(b);
+    return std::bit_cast<big_int<N,T>>(ret);
+  }
+#endif
   T carry{};
   big_int<N, T> r{};
 
