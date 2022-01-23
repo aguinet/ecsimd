@@ -69,7 +69,7 @@ constexpr auto montgomery_reduction(big_int<N1, T> A,
 
 template <typename T, std::size_t N, T... Modulus>
 CBN_ALWAYS_INLINE
-__attribute__((noinline)) constexpr auto montgomery_mul(big_int<N, T> x, big_int<N, T> y,
+constexpr auto montgomery_mul(big_int<N, T> x, big_int<N, T> y,
                               std::integer_sequence<T, Modulus...>) {
   // Montgomery multiplication with compile-time modulus
 

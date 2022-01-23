@@ -21,15 +21,15 @@ using namespace cbn::literals;
 constexpr size_t nlimbs = 4;
 using limb_type = uint64_t;
 
-using u256 = _ExtInt(256);
+//using u256 = _ExtInt(256);
 using cbn_u256 = cbn::big_int<4, uint64_t>;
 
-using u512 = _ExtInt(512);
+//using u512 = _ExitInt(512);
 using cbn_u512 = cbn::big_int<8, uint64_t>;
 
 namespace {
 
-
+/*
 constexpr u256 from_cbn(cbn_u256 const& v) {
   return std::bit_cast<u256>(v);
 }
@@ -41,7 +41,7 @@ constexpr cbn_u256 to_cbn(u256 const& v) {
 constexpr cbn_u512 to_cbn_512(u512 const& v) {
   return std::bit_cast<cbn_u512>(v);
 }
-
+*/
 constexpr auto P = 115792089210356248762697446949407573530086143415290314195533631308867097853951_Z;
 constexpr auto cbn_P = cbn::to_big_int(P);
 constexpr auto cbn_4P = cbn::shift_left(cbn_P, 2);
@@ -106,7 +106,7 @@ gfp gfp_shift_left(gfp const& a) {
   return ret;
 }
 
-#if 1
+#if 0
 template <size_t N>
 auto select_mask(const bool P, cbn::big_int<N, uint64_t> const& True, cbn::big_int<N, uint64_t> const& False) {
   const uint64_t tmask = -uint64_t{P};
@@ -133,7 +133,6 @@ auto sub_if_above(cbn::big_int<N, uint64_t> const& a, cbn::big_int<N, uint64_t> 
 }
 
 [[gnu::flatten]] cbn_u256 fast_reduce(cbn_u512 const& n) {
-  //return cbn::mod(n, P);
   using cbn_u512_l32 = cbn::big_int<16, uint32_t>;
   const auto n32 = std::bit_cast<cbn_u512_l32>(n);
   std::array<int64_t, 16> a;
@@ -156,8 +155,7 @@ auto sub_if_above(cbn::big_int<N, uint64_t> const& a, cbn::big_int<N, uint64_t> 
       static_cast<uint64_t>(l7 >> 32)
   };
 
-  const auto r64 = std::bit_cast<cbn::big_int<5,uint64_t>>(r);
-  auto ret = select_mask(l7 < 0, cbn::add_ignore_carry(r64, cbn_4P), r64);
+  auto ret = select_mask(l7 < 0, cbn::add_ignore_carry(r, cbn_4P), r);
   constexpr auto cbn_P_pad1 = cbn::detail::pad<1>(cbn_P);
   ret = sub_if_above(ret, cbn_P_pad1);
   ret = sub_if_above(ret, cbn_P_pad1);
@@ -166,7 +164,7 @@ auto sub_if_above(cbn::big_int<N, uint64_t> const& a, cbn::big_int<N, uint64_t> 
   return cbn::detail::first<4>(ret);
 }
 #else
-cbn_u256 fast_reduce(cbn_u512 const& n) {
+[[gnu::flatten]] cbn_u256 fast_reduce(cbn_u512 const& n) {
   using cbn_u512_l32 = cbn::big_int<16, uint32_t>;
   using cbn_u256_l32 = cbn::big_int<8, uint32_t>;
   const auto a = std::bit_cast<cbn_u512_l32>(n);
@@ -312,7 +310,7 @@ JCP ZADDU(JCP& P, JCP const& O) {
 
 // Co-Z doubling-addition with updates. Returns (2P+Q) and updates Q with
 // same Z than returned point.
-__attribute__((noinline)) JCP ZDAU(JCP const& P, JCP& Q) {
+__attribute__((noinline,flatten)) JCP ZDAU(JCP const& P, JCP& Q) {
   assert(P.z().bn() == O.z().bn());
   const auto& X1 = P.x();
   const auto& Y1 = P.y();
