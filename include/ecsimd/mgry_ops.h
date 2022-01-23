@@ -41,11 +41,6 @@ template <concepts::wide_mgry_bignum WMBN>
   //return mgry_mul(v,v);
 }
 
-template <concepts::wide_bignum WBN, concepts::bignum_cst P>
-wide_mgry_bignum<WBN, P> wide_mgry_bignum<WBN, P>::sqr() const {
-  return mgry_sqr(*this);
-}
-
 // computes a**M*R [p]. Not safe from side channels leak of the exponent M.
 template <concepts::wide_mgry_bignum WMBN>
 WMBN mgry_pow(WMBN const& a, typename WMBN::bignum_type const& M) {

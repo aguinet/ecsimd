@@ -29,6 +29,12 @@ auto if_else(cmp_res_t<typename WMBN::wide_bignum_type> mask, WMBN& a, WMBN& b)
   return WMBN{if_else(mask, a.wbn(), b.wbn())};
 }
 
+template <concepts::GFp GFP>
+auto if_else(cmp_res_t<typename GFP::WBN> mask, GFP& a, GFP& b)
+{
+  return GFP{if_else(mask, a.wbn(), b.wbn())};
+}
+
 template <concepts::curve Curve>
 auto if_else(
     cmp_res_t<curve_wide_bn_t<Curve>> mask,

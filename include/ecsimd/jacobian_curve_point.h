@@ -13,9 +13,8 @@ struct wide_jacobian_curve_point {
   using curve_type = Curve;
   using bignum_type = curve_bn_t<Curve>;
   using WBN  = curve_wide_bn_t<Curve>;
-  using WMBN = curve_wide_mgry_bn_t<Curve>;
   using wide_curve_point_t = wide_curve_point<Curve>;
-  using gfp = GFp<typename Curve::P>;
+  using gfp = GFp<WBN, typename Curve::P>;
 
   wide_jacobian_curve_point() = default;
   wide_jacobian_curve_point(wide_jacobian_curve_point const&) = default;
@@ -25,9 +24,9 @@ struct wide_jacobian_curve_point {
   // We also use the montgomery representation, so z == R
   static wide_jacobian_curve_point from_affine(wide_curve_point_t const& pt) {
     wide_jacobian_curve_point ret;
-    ret.x_ = WMBN::from_classical(pt.x());
-    ret.y_ = WMBN::from_classical(pt.y());
-    ret.z_ = WMBN::R();
+    ret.x_ = gfp::from_classical(pt.x());
+    ret.y_ = gfp::from_classical(pt.y());
+    ret.z_ = gfp::one();
     return ret;
   }
 
@@ -49,7 +48,7 @@ struct wide_jacobian_curve_point {
   wide_jacobian_curve_point opposite() const {
     wide_jacobian_curve_point ret;
     ret.x() = x();
-    ret.y() = gfp::mgry_opposite(y());
+    ret.y() = y().opposite();
     ret.z() = z();
     return ret;
   }
@@ -63,9 +62,9 @@ struct wide_jacobian_curve_point {
   auto const& z() const { return z_; }
 
 private:
-  WMBN x_;
-  WMBN y_;
-  WMBN z_;
+  gfp x_;
+  gfp y_;
+  gfp z_;
 };
 
 } // ecsimd

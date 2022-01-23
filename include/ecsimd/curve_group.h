@@ -23,7 +23,7 @@ struct curve_group<Curve> {
   using WBN  = curve_wide_bn_t<Curve>;
   using BN = typename WBN::value_type;
   using WMBN = curve_wide_mgry_bn_t<Curve>;
-  using gfp = GFp<typename Curve::P>;
+  using gfp = GFp<WBN, typename Curve::P>;
 
   using WCP  = wide_curve_point<Curve>;
   using WJCP = wide_jacobian_curve_point<Curve>;
@@ -40,13 +40,13 @@ struct curve_group<Curve> {
     return WJCP::from_affine(WG());
   }
 
-  static std::optional<WMBN> compute_y(WMBN const& x) {
+  static std::optional<gfp> compute_y(gfp const& x) {
     // y^2 = x^3 + ax + b
     // a == -3
     const auto xpow3 = x.sqr() * x;
-    const auto x3 = mgry_shift_left<1>(x) + x;
-    const auto ypow2 = xpow3 + WMBN{WBN{Bm}} - x3;
-    return ypow2.sqrt();
+    const auto x3 = gfp_shift_left<1>(x) + x;
+    const auto ypow2 = xpow3 + gfp{WMBN{WBN{Bm}}} - x3;
+    return {ypow2.sqrt()};
   }
 
   static std::optional<WBN> compute_y(WBN const& x) {
@@ -69,14 +69,14 @@ struct curve_group<Curve> {
     const auto B = X1.sqr();
     const auto E = Y1.sqr();
     const auto L = E.sqr();
-    const auto S = mgry_shift_left<1>((X1 + E).sqr() - B - L);
-    const auto M = (mgry_shift_left<1>(B)+B) + WMBN{WBN{Am}};
+    const auto S = gfp_shift_left<1>((X1 + E).sqr() - B - L);
+    const auto M = (gfp_shift_left<1>(B)+B) + gfp{WMBN{WBN{Am}}};
 
     WJCP ret;
-    ret.x() = M.sqr() - mgry_shift_left<1>(S);
-    const auto Lm8 = mgry_shift_left<3>(L);
+    ret.x() = M.sqr() - gfp_shift_left<1>(S);
+    const auto Lm8 = gfp_shift_left<3>(L);
     ret.y() = M*(S-ret.x()) - Lm8;
-    ret.z() = mgry_shift_left<1>(Y1);
+    ret.z() = gfp_shift_left<1>(Y1);
 
     // Update P
     X1 = S;
@@ -133,20 +133,20 @@ struct curve_group<Curve> {
     const auto A1p = Y1*(W1p-W2p);
     const auto X3pc = Dp - W1p - W2p;
     const auto C = (X3pc - W1p).sqr();
-    const auto Y3p = ((Y1-Y2) + (W1p - X3pc)).sqr() - Dp - C - mgry_shift_left<1>(A1p);
-    const auto W1 = mgry_shift_left<2>(X3pc)*C;
-    const auto W2 = mgry_shift_left<2>(W1p)*C;
-    const auto D = (Y3p-mgry_shift_left<1>(A1p)).sqr();
+    const auto Y3p = ((Y1-Y2) + (W1p - X3pc)).sqr() - Dp - C - gfp_shift_left<1>(A1p);
+    const auto W1 = gfp_shift_left<2>(X3pc)*C;
+    const auto W2 = gfp_shift_left<2>(W1p)*C;
+    const auto D = (Y3p-gfp_shift_left<1>(A1p)).sqr();
     const auto A1 = Y3p*(W1-W2);
 
     WJCP ret;
     ret.x() = D-W1-W2;
-    ret.y() = (Y3p-mgry_shift_left<1>(A1p))*(W1-ret.x()) - A1;
+    ret.y() = (Y3p-gfp_shift_left<1>(A1p))*(W1-ret.x()) - A1;
     ret.z() = Z*((X1-X2+X3pc-W1p).sqr() - Cp - C);
 
-    const auto Dc = (Y3p+mgry_shift_left<1>(A1p)).sqr();
+    const auto Dc = (Y3p+gfp_shift_left<1>(A1p)).sqr();
     X2 = Dc - W1 - W2;
-    Y2 = (Y3p + mgry_shift_left<1>(A1p))*(W1-X2)-A1;
+    Y2 = (Y3p + gfp_shift_left<1>(A1p))*(W1-X2)-A1;
     Q.z() = ret.z();
 
     return ret;
@@ -165,14 +165,14 @@ struct curve_group<Curve> {
     const auto S2 = Y2*Z1*Z1Z1;
     const auto H = U2-X1;
     const auto HH = H.sqr();
-    const auto I = mgry_shift_left<2>(HH);
+    const auto I = gfp_shift_left<2>(HH);
     const auto J = H*I;
-    const auto r = mgry_shift_left<1>(S2-Y1);
+    const auto r = gfp_shift_left<1>(S2-Y1);
     const auto V = X1*I;
 
     WJCP ret;
-    ret.x() = r.sqr()-J-mgry_shift_left<1>(V);
-    ret.y() = r*(V-ret.x())-mgry_shift_left<1>(Y1)*J;
+    ret.x() = r.sqr()-J-gfp_shift_left<1>(V);
+    ret.y() = r*(V-ret.x())-gfp_shift_left<1>(Y1)*J;
     ret.z() = (Z1+H).sqr()-Z1Z1-HH;
 
     return ret;

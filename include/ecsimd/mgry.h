@@ -49,10 +49,6 @@ struct wide_mgry_bignum
     return wide_mgry_bignum{details::mgry_reduce<P_type>(m)};
   }
 
-  wide_mgry_bignum sqr() const;
-  wide_mgry_bignum inverse() const;
-  std::optional<wide_mgry_bignum> sqrt() const;
-
   WBN to_classical() const {
     auto zext = pad<bn_nlimbs<bignum_type>>(n_);
     return details::mgry_reduce<P_type>(zext);

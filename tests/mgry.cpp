@@ -122,18 +122,19 @@ TEST(Mgry, Ops) {
 TEST(Mgry, Gfp) {
   using WBN = wide_bignum<bignum_256>;
   using WMBN = wide_mgry_bignum<WBN, P>;
+  using GFP = GFp<WBN, P>;
 
   {
     const auto a = wide_bignum_set1<WBN>("FFFFFFFFFFFFFFFFFFFFFF000000000000000000000000000000000000000004"_hex);
-    const auto ma = WMBN::from_classical(a);
-    const auto inv = GFp<P>::mgry_inverse(ma).to_classical();
+    const auto ma = GFP::from_classical(a);
+    const auto inv = ma.inverse().to_classical();
     EXPECT_TRUE(eve::all(inv == wide_bignum_set1<WBN>("DC1B98237FD316F9AEE7342E6DC7629A75A99A9E9EF591170282CE3E1D8E26ED"_hex)));
   }
 
   {
     const auto a = wide_bignum_set1<WBN>("b560fd7b259468b53c3a1623f35786a491fcb1fcdfbb0165da4dccce1f185b60"_hex);
-    const auto ma = WMBN::from_classical(a);
-    const auto oinv = GFp<P>::mgry_sqrt(ma);
+    const auto ma = GFP::from_classical(a);
+    const auto oinv = ma.sqrt();
     EXPECT_TRUE(oinv.has_value());
     const auto inv = oinv->to_classical();
     EXPECT_TRUE(eve::all(inv == wide_bignum_set1<WBN>("a59f1be7c1f892ff2adf14187e9cff7666112af579bc1a11b63e248098567e71"_hex)));
@@ -141,9 +142,9 @@ TEST(Mgry, Gfp) {
 
   {
     const auto a = wide_bignum_set1<WBN>("b560fd7b259468b53c3a1623f35786a491fcb1fcdfbb0165da4dccce1f185b60"_hex);
-    const auto ma = WMBN::from_classical(a);
-    const auto opp_ma = GFp<P>::mgry_opposite(ma);
-    const auto Z = mgry_add(ma, opp_ma);
+    const auto ma = GFP::from_classical(a);
+    const auto opp_ma = ma.opposite();
+    const auto Z = ma+opp_ma;
     EXPECT_TRUE(eve::all(Z.wbn() == eve::zero(eve::as(Z.wbn()))));
   }
 }

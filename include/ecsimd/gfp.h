@@ -14,32 +14,64 @@
 
 namespace ecsimd {
 
-template <concepts::bignum_cst P>
+template <concepts::wide_bignum WBN_, concepts::bignum_cst P>
 struct GFp
 {
-  using BN = bn_t<P>;
-  using WBN = wide_bignum<BN>;
+  using P_type = P;
+  using WBN = WBN_;
+  using BN = typename WBN::value_type;
   using WMBN = wide_mgry_bignum<WBN, P>;
 
-  static auto mgry_inverse(WMBN const& v) {
-    return mgry_pow(v, P_pow_m2);
+  GFp() = default;
+  GFp(WMBN const& n):
+    n_(n)
+  { }
+
+  static GFp one() {
+    return GFp{WMBN::R()};
   }
 
-  static std::optional<WMBN> mgry_sqrt(WMBN const& v) {
-    const auto ret = mgry_pow(v, P_pow_sqrt);
+  static GFp from_classical(WBN const& n) {
+    return {WMBN::from_classical(n)};
+  }
+
+  WBN to_classical() const {
+    return n_.to_classical();
+  }
+
+  GFp inverse() const {
+    return {mgry_pow(n_, P_pow_m2)};
+  }
+
+  std::optional<GFp> sqrt() const {
+    const auto ret = GFp{mgry_pow(n_, P_pow_sqrt)};
     // TODO: verify it exists using the Jacobi symbol
     // (https://en.wikipedia.org/wiki/Jacobi_symbol#Calculating_the_Jacobi_symbol)
-    if (eve::any(mgry_sqr(ret).wbn() != v.wbn())) {
+    if (eve::any(ret.sqr().wbn() != wbn())) {
       return {};
     }
     return {ret};
   }
 
-  static WMBN mgry_opposite(WMBN const& v) {
-    using constants_type = typename WMBN::constants_type;
-    WMBN ret = mgry_sub(v, WMBN::R());
-    return mgry_sub(WMBN{WBN{constants_type::Pm1_by_R_p}}, ret);
+  GFp sqr() const {
+    return {mgry_sqr(n_)};
   }
+
+  GFp opposite() const {
+    using constants_type = typename WMBN::constants_type;
+    WMBN ret = mgry_sub(n_, WMBN::R());
+    return GFp{mgry_sub(WMBN{WBN{constants_type::Pm1_by_R_p}}, ret)};
+  }
+
+  auto operator<=>(GFp const& o) const {
+    return n_ <=> o.n_;
+  }
+
+  auto const& wbn() const { return n_.wbn(); }
+  auto& wbn() { return n_.wbn(); }
+
+  auto const& wmbn() const { return n_; }
+  auto& wmbn() { return n_; }
 
 private:
   using cbn_type = typename BN::cbn_type;
@@ -53,16 +85,33 @@ private:
   static constexpr auto P_pow_sqrt = BN::from(
     cbn::detail::first<bn_nlimbs<BN>>(
       cbn::shift_right(P_cbn+cbn_type{1},2)));
+
+  WMBN n_;
 };
 
-template <concepts::wide_bignum WBN, concepts::bignum_cst P>
-wide_mgry_bignum<WBN, P> wide_mgry_bignum<WBN, P>::inverse() const {
-  return GFp<P>::mgry_inverse(*this);
+namespace concepts {
+template <class T>
+concept GFp = std::same_as<T, GFp<typename T::WBN, typename T::P_type>>;
+} // concepts
+
+template <concepts::GFp GFP>
+GFP operator+(GFP const& a, GFP const& b) {
+  return GFP{mgry_add(a.wmbn(),b.wmbn())};
 }
 
-template <concepts::wide_bignum WBN, concepts::bignum_cst P>
-std::optional<wide_mgry_bignum<WBN, P>> wide_mgry_bignum<WBN, P>::sqrt() const {
-  return GFp<P>::mgry_sqrt(*this);
+template <concepts::GFp GFP>
+GFP operator-(GFP const& a, GFP const& b) {
+  return GFP{mgry_sub(a.wmbn(),b.wmbn())};
+}
+
+template <concepts::GFp GFP>
+GFP operator*(GFP const& a, GFP const& b) {
+  return GFP{mgry_mul(a.wmbn(),b.wmbn())};
+}
+
+template <size_t Count, concepts::GFp GFP>
+GFP gfp_shift_left(GFP const& a) {
+  return GFP{mgry_shift_left<Count>(a.wmbn())};
 }
 
 } // ecsimd
