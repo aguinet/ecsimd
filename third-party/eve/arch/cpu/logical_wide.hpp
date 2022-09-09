@@ -1,8 +1,8 @@
 //==================================================================================================
 /*
   EVE - Expressive Vector Engine
-  Copyright : EVE Contributors & Maintainers
-  SPDX-License-Identifier: MIT
+  Copyright : EVE Project Contributors
+  SPDX-License-Identifier: BSL-1.0
 */
 //==================================================================================================
 #pragma once
@@ -23,12 +23,9 @@
 #include <eve/detail/function/fill.hpp>
 #include <eve/detail/function/friends.hpp>
 #include <eve/detail/function/load.hpp>
-#include <eve/detail/function/lookup.hpp>
 #include <eve/detail/function/make.hpp>
-#include <eve/detail/function/patterns.hpp>
 #include <eve/detail/function/slice.hpp>
 #include <eve/detail/function/subscript.hpp>
-#include <eve/detail/function/swizzle.hpp>
 #include <eve/traits/as_integer.hpp>
 
 #include <cstring>
@@ -54,7 +51,7 @@ namespace eve
   //! @tparam Cardinal  Cardinal of the register. By default, the best cardinal for current
   //!                   architecture is selected.
   //================================================================================================
-  template<typename Type, typename Cardinal>
+  template<arithmetic_scalar_value Type, typename Cardinal>
   struct  EVE_MAY_ALIAS  logical<wide<Type,Cardinal>>
         : detail::wide_storage<as_logical_register_t<Type, Cardinal, abi_t<Type, Cardinal>>>
   {
@@ -102,13 +99,7 @@ namespace eve
 
     //! Constructs from ABI-specific storage
     EVE_FORCEINLINE logical(storage_type const &r) noexcept
-      : storage_base( [&]()
-                      { constexpr auto  c =   Cardinal::value == 1 && sizeof(Type) == 8
-                                          &&  std::is_same_v<abi_type, arm_64_>
-                                          && current_api != asimd;
-                        if constexpr(c) return value_type(r); else  return r;
-                      }()
-                    )
+      : storage_base( r )
     {}
 
     //! @brief Constructs a eve::logical from a pair of @iterator.
@@ -180,7 +171,7 @@ namespace eve
     //! @endcode
     //!
     //==============================================================================================
-    template<std::invocable<size_type,size_type> Generator>
+    template<eve::invocable<size_type,size_type> Generator>
     EVE_FORCEINLINE logical(Generator &&g) noexcept
                   : storage_base(detail::fill(as<logical>{}, EVE_FWD(g)))
     {}
@@ -194,7 +185,7 @@ namespace eve
 #if !defined(EVE_DOXYGEN_INVOKED)
     requires( Cardinal::value == 2 * Half::value )
 #endif
-                  : storage_base(detail::combine(EVE_CURRENT_API{}, l, h))
+                  : storage_base(detail::combine(eve::current_api, l, h))
     {}
 
     //==============================================================================================
@@ -240,78 +231,6 @@ namespace eve
     static EVE_FORCEINLINE constexpr bool      empty()    noexcept { return false; }
 
     //==============================================================================================
-    //! @brief Dynamic lookup via lane indexing
-    //!
-    //! Generate a new eve::wide which is an arbitrary shuffling of current eve::wide lanes.
-    //! The values of `idx` must be integer between 0 and `size()-1` or equal to eve::na_ to
-    //! indicate the value at this lane must be replaced by zero.
-    //!
-    //! Does not participate in overload resolution if `idx` is not an integral register.
-    //!
-    //! @param idx  eve::wide of integral indexes
-    //! @return     A eve::wide constructed as `wide{ get(idx.get(0)), ..., get(idx.get(size()-1))}`.
-    //==============================================================================================
-    template<typename Index>
-    EVE_FORCEINLINE auto operator[](wide<Index,Cardinal> const& idx) const noexcept
-    {
-      return lookup((*this),idx);
-    }
-
-    //==============================================================================================
-    //! @brief Static lookup via lane indexing
-    //!
-    //! Generate a new eve::logical which is an arbitrary shuffling of current eve::logical lanes.
-    //! `p' is an instance of eve::pattern_t constructed via the eve::pattern template
-    //! variable. Values appearing in the pattern must be between 0 and `size()-1` or equal
-    //! to eve::na_ to indicate the value at this lane must be replaced by zero or this operator
-    //! will not participate in overload resolution.
-    //!
-    //! Note that if the statically generated pattern matches a predefined @ref shuffling function
-    //! the corresponding optimized shuffling functions will be called.
-    //!
-    //! @param p  A eve::pattern defining a shuffling pattern
-    //! @return   A logical constructed as `logical{ get(I), ... }`.
-    //!
-    //! @see eve::pattern_t
-    //! @see eve::pattern
-    //==============================================================================================
-    template<std::ptrdiff_t... I>
-#if !defined (EVE_DOXYGEN_INVOKED)
-    EVE_FORCEINLINE auto operator[](pattern_t<I...>) const noexcept
-    requires(pattern_t<I...>{}.validate(Cardinal::value))
-#else
-    EVE_FORCEINLINE auto operator[](pattern_t<I...> p) const noexcept
-#endif
-    {
-      constexpr auto swizzler = detail::find_optimized_pattern<Cardinal::value,I...>();
-      return swizzler((*this));
-    }
-
-
-    //==============================================================================================
-    //! @brief Static lookup via procedural lane indexing
-    //!
-    //! Generate a new eve::logical which is an arbitrary shuffling of current eve::logical lanes.
-    //! `p' is an instance of eve::as_pattern instantiated with a `constexpr` lambda that will be
-    //! used to generate the pattern algorithmically.
-    //! Values returned by the lambda must be between 0 and `size()-1` or equal to eve::na_ to
-    //! indicate the value at this lane must be replaced by zero or this operator
-    //! will not participate in overload resolution.
-    //!
-    //! Note that if the statically generated pattern matches a pre-defined @ref shuffling function
-    //! the corresponding optimized shuffling functions will be called.
-    //!
-    //! @param p  A eve::as_pattern_t defined from a lambda function
-    //! @return   A logical constructed as `logical{ get(p(0,size())), ..., get(p(0,size()-1)) }`.
-    //!
-    //! @see eve::as_pattern
-    //==============================================================================================
-    template<typename F>
-    EVE_FORCEINLINE auto operator[](as_pattern<F> p) const noexcept
-    {
-      return (*this)[ fix_pattern<Cardinal::value>(p) ];
-    }
-    //==============================================================================================
     //! @}
     //==============================================================================================
 
@@ -320,14 +239,14 @@ namespace eve
     //==============================================================================================
     //! @brief Computes a eve::wide containing the bit pattern of current logical.
     //! This bit patterns is contained in a eve::wide of unsigned integral.
-    EVE_FORCEINLINE auto bits()   const noexcept { return detail::to_bits(EVE_CURRENT_API{},*this); }
+    EVE_FORCEINLINE auto bits()   const noexcept { return detail::to_bits(eve::current_api,*this); }
 
     //! @brief Computes a eve::wide containing the bit pattern of current logical.
     //! This bit patterns is contained in a eve::wide of `Type`.
-    EVE_FORCEINLINE auto mask()   const noexcept { return detail::to_mask(EVE_CURRENT_API{},*this); }
+    EVE_FORCEINLINE auto mask()   const noexcept { return detail::to_mask(eve::current_api,*this); }
 
     //! Returns a bitset corresponding to the current logical values.
-    EVE_FORCEINLINE auto bitmap() const noexcept { return detail::to_bitmap(EVE_CURRENT_API{},*this); }
+    EVE_FORCEINLINE auto bitmap() const noexcept { return detail::to_bitmap(eve::current_api,*this); }
 
     //==============================================================================================
     // Logical operations
@@ -336,7 +255,7 @@ namespace eve
     template<typename U>
     friend EVE_FORCEINLINE auto operator&&(logical const& v, logical<wide<U, Cardinal>> const& w) noexcept
     {
-      return detail::self_logand(EVE_CURRENT_API{},v,w);
+      return detail::self_logand(eve::current_api,v,w);
     }
 
     //! Perform a logical and operation between a eve::logical and a scalar
@@ -357,7 +276,7 @@ namespace eve
     template<typename U>
     friend EVE_FORCEINLINE auto operator||(logical const& v, logical<wide<U, Cardinal>> const& w) noexcept
     {
-      return detail::self_logor(EVE_CURRENT_API{},v,w);
+      return detail::self_logor(eve::current_api,v,w);
     }
 
     //! Perform a logical or operation between a eve::logical and a scalar
@@ -501,6 +420,7 @@ namespace eve
 
     //! @brief Element-wise equality comparison of a eve::logical and a scalar value
     template<scalar_value S>
+    requires requires(S s) { logical{s}; }
     friend EVE_FORCEINLINE logical operator==(logical v, S w) noexcept
     {
       return v == logical{w};
@@ -508,6 +428,7 @@ namespace eve
 
     //! @brief Element-wise equality comparison of a scalar value and a eve::logical
     template<scalar_value S>
+    requires requires(S s) { logical{s}; }
     friend EVE_FORCEINLINE logical operator==(S v, logical w) noexcept
     {
       return w == v;
@@ -521,6 +442,7 @@ namespace eve
 
     //! @brief Element-wise inequality comparison of a eve::logical and a scalar value
     template<scalar_value S>
+    requires requires(S s) { logical{s}; }
     friend EVE_FORCEINLINE logical operator!=(logical v, S w) noexcept
     {
       return v != logical{w};
@@ -528,6 +450,7 @@ namespace eve
 
     //! @brief Element-wise inequality comparison of a scalar value and a eve::logical
     template<scalar_value S>
+    requires requires(S s) { logical{s}; }
     friend EVE_FORCEINLINE logical operator!=(S v, logical w) noexcept
     {
       return w != v;

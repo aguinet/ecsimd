@@ -1,13 +1,13 @@
 //==================================================================================================
 /*
   EVE - Expressive Vector Engine
-  Copyright : EVE Contributors & Maintainers
-  SPDX-License-Identifier: MIT
+  Copyright : EVE Project Contributors
+  SPDX-License-Identifier: BSL-1.0
 */
 //==================================================================================================
 #pragma once
 
-#include <eve/function/if_else.hpp>
+#include <eve/module/core/regular/if_else.hpp>
 
 namespace eve::detail
 {
@@ -31,4 +31,3 @@ namespace eve::detail
     else                return [t, f](auto&&... x) { return f(x...); };
   }
 }
-

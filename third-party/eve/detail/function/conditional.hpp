@@ -1,8 +1,8 @@
 //==================================================================================================
 /*
   EVE - Expressive Vector Engine
-  Copyright : EVE Contributors & Maintainers
-  SPDX-License-Identifier: MIT
+  Copyright : EVE Project Contributors
+  SPDX-License-Identifier: BSL-1.0
 */
 //==================================================================================================
 #pragma once
@@ -10,9 +10,9 @@
 #include <eve/arch.hpp>
 #include <eve/as.hpp>
 #include <eve/conditional.hpp>
-#include <eve/constant/false.hpp>
-#include <eve/function/convert.hpp>
-#include <eve/function/if_else.hpp>
+#include <eve/module/core/constant/false.hpp>
+#include <eve/module/core/regular/convert.hpp>
+#include <eve/module/core/regular/if_else.hpp>
 
 namespace eve::detail
 {

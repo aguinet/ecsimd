@@ -1,16 +1,16 @@
 //==================================================================================================
 /*
   EVE - Expressive Vector Engine
-  Copyright : EVE Contributors & Maintainers
-  SPDX-License-Identifier: MIT
+  Copyright : EVE Project Contributors
+  SPDX-License-Identifier: BSL-1.0
 */
 //==================================================================================================
 #pragma once
 
+#include <eve/forward.hpp>
 #include <eve/arch/spec.hpp>
 #include <eve/detail/meta.hpp>
 #include <eve/detail/abi.hpp>
-#include <eve/detail/function/to_logical.hpp>
 #include <eve/concept/conditional.hpp>
 #include <eve/concept/value.hpp>
 
@@ -31,7 +31,7 @@ namespace tag { struct TAG {}; }                                                
     template<typename... Args>                                                                     \
     concept supports_ ## TAG = requires(Args&&... args)                                            \
     {                                                                                              \
-      { TAG( delay_t{}, EVE_CURRENT_API{}, EVE_FWD(args)...) };                         \
+      { TAG( delay_t{}, eve::current_api, EVE_FWD(args)...) };                                    \
     };                                                                                             \
                                                                                                    \
     template<typename Dummy>                                                                       \
@@ -43,31 +43,31 @@ namespace tag { struct TAG {}; }                                                
       requires  (   tag_dispatchable<tag_type,Arg,Args...>                                         \
                 ||  supports_ ## TAG<Arg,Args...>                                                  \
                 )                                                                                  \
-      static EVE_FORCEINLINE constexpr auto call(Arg&& d, Args &&... args)  noexcept               \
+      static EVE_FORCEINLINE constexpr decltype(auto) call(Arg&& d, Args &&... args)  noexcept     \
       {                                                                                            \
         if constexpr( decorator<std::decay_t<Arg>> )                                               \
         {                                                                                          \
           check ( delay_t{}, ::eve::detail::types<std::decay_t<Arg>,tag_type>{},                   \
-                  EVE_FWD(args)...                                                      \
+                  EVE_FWD(args)...                                                                 \
                 );                                                                                 \
         }                                                                                          \
         else                                                                                       \
         {                                                                                          \
-          check ( delay_t{}, ::eve::detail::types<tag_type>{}, EVE_FWD(d),               \
-                  EVE_FWD(args)...                                                      \
+          check ( delay_t{}, ::eve::detail::types<tag_type>{}, EVE_FWD(d),                         \
+                  EVE_FWD(args)...                                                                 \
                 );                                                                                 \
         }                                                                                          \
                                                                                                    \
         if constexpr( tag_dispatchable<tag_type,Arg,Args...> )                                     \
         {                                                                                          \
           return tagged_dispatch ( tag_type{}                                                      \
-                            , EVE_FWD(d), EVE_FWD(args)...                    \
+                            , EVE_FWD(d), EVE_FWD(args)...                                         \
                             );                                                                     \
         }                                                                                          \
         else                                                                                       \
         {                                                                                          \
-          return TAG( delay_t{}, EVE_CURRENT_API{}                                                 \
-                    , EVE_FWD(d), EVE_FWD(args)...                            \
+          return TAG( delay_t{}, eve::current_api                                                 \
+                    , EVE_FWD(d), EVE_FWD(args)...                                                 \
                     );                                                                             \
         }                                                                                          \
       }                                                                                            \
@@ -76,29 +76,24 @@ namespace tag { struct TAG {}; }                                                
       requires  (   tag_dispatchable<tag_type,Args...>                                             \
                 ||  supports_ ## TAG<Args...>                                                      \
                 )                                                                                  \
-      EVE_FORCEINLINE constexpr auto operator()(Args &&... args) const noexcept                    \
+      EVE_FORCEINLINE constexpr decltype(auto) operator()(Args &&... args) const noexcept          \
       {                                                                                            \
         return call(args...);                                                                      \
       }                                                                                            \
                                                                                                    \
       template<value Condition>                                                                    \
-      EVE_FORCEINLINE constexpr auto operator[](Condition const &c) const noexcept                 \
+      EVE_FORCEINLINE constexpr auto operator[](Condition c) const noexcept                        \
       requires( eve::supports_conditional<tag_type>::value )                                       \
       {                                                                                            \
-        return  [cond = if_(to_logical(c))](auto const&... args) EVE_LAMBDA_FORCEINLINE            \
-                {                                                                                  \
-                  return callable_object::call(cond, args...);                                     \
-                };                                                                                 \
+        auto cond = if_(to_logical(c));                                                            \
+        return callable_object_bind_recurse<callable_object, decltype(cond)>{cond};                \
       }                                                                                            \
                                                                                                    \
       template<conditional_expr Condition>                                                         \
-      EVE_FORCEINLINE constexpr auto operator[](Condition const &c) const noexcept                 \
+      EVE_FORCEINLINE constexpr auto operator[](Condition c) const noexcept                 \
       requires( eve::supports_conditional<tag_type>::value )                                       \
       {                                                                                            \
-        return  [c](auto const&... args) EVE_LAMBDA_FORCEINLINE                                    \
-                {                                                                                  \
-                  return callable_object::call(c, args...);                                        \
-                };                                                                                 \
+        return callable_object_bind_recurse<callable_object, Condition>{c};                        \
       }                                                                                            \
     };                                                                                             \
   }                                                                                                \
@@ -152,6 +147,10 @@ namespace eve
   //================================================================================================
   struct decorator_ {};
   template<typename ID> concept decorator = std::derived_from<ID,decorator_>;
+  template<typename D, typename F> concept specific_decorator = requires(D d, F f)
+  {
+    { d(f) };
+  };
 
   template<typename Decoration> struct decorated;
   template<typename Decoration, typename... Args>
@@ -171,7 +170,7 @@ namespace eve
       Function f;
 
       template <typename... X>
-      constexpr EVE_FORCEINLINE auto operator()(X&&... x)
+      constexpr EVE_FORCEINLINE auto operator()(X&&... x) const
       {
         return f(decorated{}, EVE_FWD(x)...);
       }
@@ -180,7 +179,7 @@ namespace eve
     template<typename Function>
     constexpr EVE_FORCEINLINE auto operator()(Function f) const noexcept
     {
-      if constexpr( requires{ Decoration{}(f); } )  return Decoration{}(f);
+      if constexpr( specific_decorator<Decoration,Function> )  return Decoration{}(f);
       else                                          return fwding_lamda<Function>{f};
     }
   };
@@ -200,10 +199,22 @@ namespace eve
     // callable_object forward declaration
     template<typename Tag, typename Dummy = void> struct callable_object;
 
+    // Internal lambda to do force inlining
+    template <typename Self, typename First>
+    struct callable_object_bind_recurse
+    {
+      First first;
+
+      EVE_FORCEINLINE decltype(auto) operator()(auto ... args) const noexcept
+      {
+        return Self::call(first, args...);
+      }
+    };
+
     //==============================================================================================
     // User-facing tag-dispatch helper
     template <typename Tag, typename... Args>
-    concept tag_dispatchable = requires(Tag tag, Args&&... args)
+    concept tag_dispatchable = requires(Tag tag, Args... args)
     {
       { tagged_dispatch(tag, EVE_FWD(args)...) };
     };

@@ -1,14 +1,15 @@
 //==================================================================================================
 /*
   EVE - Expressive Vector Engine
-  Copyright : EVE Contributors & Maintainers
-  SPDX-License-Identifier: MIT
+  Copyright : EVE Project Contributors
+  SPDX-License-Identifier: BSL-1.0
 */
 //==================================================================================================
 #pragma once
 
-#include <eve/forward.hpp>
+#include <eve/concept/value.hpp>
 #include <eve/detail/kumi.hpp>
+#include <eve/detail/wide_forward.hpp>
 #include <eve/as.hpp>
 #include <utility>
 
@@ -44,5 +45,15 @@ namespace eve
 
   template<typename Type, typename Size = expected_cardinal_t<Type> >
   using as_wide_t = typename as_wide<Type, Size>::type;
-}
 
+  template<typename T, typename U>
+  struct  as_wide_as
+        : std::conditional< !simd_value<T> && simd_value<U>
+                          , as_wide_t<T,cardinal_t<U>>
+                          , T
+                          >
+  {};
+
+  template<typename T, typename U>
+  using as_wide_as_t = typename as_wide_as<T,U>::type;
+}

@@ -1,16 +1,15 @@
 //==================================================================================================
 /*
   EVE - Expressive Vector Engine
-  Copyright : EVE Contributors & Maintainers
-  SPDX-License-Identifier: MIT
+  Copyright : EVE Project Contributors
+  SPDX-License-Identifier: BSL-1.0
 */
 //==================================================================================================
 #pragma once
 
-#include <eve/algo/concepts/value_type.hpp>
+#include <eve/module/core.hpp>
 #include <eve/conditional.hpp>
-#include <eve/function/load.hpp>
-#include <eve/function/store.hpp>
+#include <eve/traits.hpp>
 
 #include <utility>
 
@@ -80,6 +79,36 @@ namespace eve::algo
       return x == v;
     }
   };
+
+  template <typename Op, typename T>
+  struct bind_first
+  {
+    Op op;
+    T v;
+
+    bind_first(Op op, T v) : op(op), v(v) {}
+
+    EVE_FORCEINLINE auto operator()(auto x) const
+    {
+      return op(v, x);
+    }
+  };
+
+  template <typename Op, typename T>
+  struct bind_second
+  {
+    Op op;
+    T v;
+
+    bind_second(Op op, T v) : op(op), v(v) {}
+
+    EVE_FORCEINLINE auto operator()(auto x) const
+    {
+      return op(x, v);
+    }
+  };
+
+
 
   struct do_nothing
   {

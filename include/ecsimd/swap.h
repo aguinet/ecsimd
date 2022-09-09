@@ -5,7 +5,7 @@
 #include <ecsimd/mgry.h>
 #include <ecsimd/jacobian_curve_point.h>
 
-#include <eve/function/swap_if.hpp>
+#include <eve/module/core/regular/swap_if.hpp>
 
 #include <cassert>
 
@@ -15,7 +15,7 @@ namespace ecsimd {
 template <concepts::wide_bignum WBN>
 void swap_if(cmp_res_t<WBN> mask, WBN& a, WBN& b)
 {
-  eve::detail::for_<0,1,bn_nlimbs<WBN>>([&](auto i_) EVE_LAMBDA_FORCEINLINE {
+  eve::detail::for_<0,1,bn_nlimbs<WBN>>([&](auto i_) ECSIMD_LAMBDA_FORCEINLINE {
     constexpr auto i = decltype(i_)::value;
     eve::swap_if(mask, eve::get<i>(a), eve::get<i>(b));
   });

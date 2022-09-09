@@ -1,12 +1,13 @@
 //==================================================================================================
 /*
   EVE - Expressive Vector Engine
-  Copyright : EVE Contributors & Maintainers
-  SPDX-License-Identifier: MIT
+  Copyright : EVE Project Contributors
+  SPDX-License-Identifier: BSL-1.0
 */
 //==================================================================================================
 #pragma once
 
+#include <eve/module/core.hpp>
 #include <eve/algo/array_utils.hpp>
 #include <eve/algo/common_forceinline_lambdas.hpp>
 #include <eve/algo/concepts.hpp>
@@ -36,13 +37,13 @@ namespace eve::algo
         using out_t = eve::element_type_t<decltype(processed)>;
         auto cvt_and_store_it = views::convert(store_it, as<out_t>{});
 
-        eve::store[ignore](op(xs), cvt_and_store_it);
+        eve::store[ignore](processed, cvt_and_store_it);
       }
     };
   }
 
   //================================================================================================
-  //! @addtogroup eve.algo
+  //! @addtogroup algorithms
   //! @{
   //!  @var transform_inplace
   //!
@@ -71,11 +72,11 @@ namespace eve::algo
   inline constexpr auto transform_inplace = function_with_traits<transform_inplace_>[default_simple_algo_traits];
 
   //================================================================================================
-  //! @addtogroup eve.algo
+  //! @addtogroup algorithms
   //! @{
   //!  @var transform_to
   //!
-  //!  @brief version of std::transform
+  //!  @brief SIMD version of std::transform
   //!    * Accepts two things zipping together to range of pair.
   //!    * Also can accept a `zipped_range_pair`.
   //!    * returns void.

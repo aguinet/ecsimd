@@ -4,8 +4,6 @@
 #include <ecsimd/bignum.h>
 #include <ecsimd/curve.h>
 
-#include <eve/function/all.hpp>
-
 #include <optional>
 
 namespace ecsimd {

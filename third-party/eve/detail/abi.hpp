@@ -1,8 +1,8 @@
 //==================================================================================================
 /*
   EVE - Expressive Vector Engine
-  Copyright : EVE Contributors & Maintainers
-  SPDX-License-Identifier: MIT
+  Copyright : EVE Project Contributors
+  SPDX-License-Identifier: BSL-1.0
 */
 //==================================================================================================
 #pragma once
@@ -20,17 +20,6 @@
 #    define EVE_FORCEINLINE inline __attribute__((__always_inline__))
 #  else
 #    define EVE_FORCEINLINE inline
-#  endif
-#endif
-
-// Force a lambda function to be inline
-#if !defined(EVE_LAMBDA_FORCEINLINE)
-#  if defined(_MSC_VER)
-#    define EVE_LAMBDA_FORCEINLINE __forceinline
-#  elif defined(__GNUC__) && __GNUC__ > 3
-#    define EVE_LAMBDA_FORCEINLINE __attribute__((__always_inline__))
-#  else
-#    define EVE_LAMBDA_FORCEINLINE
 #  endif
 #endif
 

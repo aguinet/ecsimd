@@ -3,7 +3,7 @@
 
 #include <ecsimd/bignum.h>
 
-#include <eve/function/store.hpp>
+#include <eve/module/core/regular/store.hpp>
 #include <eve/detail/meta.hpp>
 
 #include <utility>

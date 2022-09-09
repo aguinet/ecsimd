@@ -39,18 +39,16 @@ constexpr auto short_mul(big_int<N, T> a, T b) {
 }
 
 template <size_t padding_limbs = 0U, size_t M, size_t N, typename T>
-__attribute__((noinline))
+CBN_ALWAYS_INLINE 
 constexpr auto mul(big_int<M, T> u, big_int<N, T> v) {
 
   using TT = typename dbl_bitlen<T>::type;
   big_int<M + N + padding_limbs, T> w{};
-#pragma unroll
   for (auto j = 0U; j < N; ++j) {
     // if (v[j] == 0)
     //  w[j + M] = static_cast<uint64_t>(0);
     // else {
     T k = 0U;
-#pragma unroll
     for (auto i = 0U; i < M; ++i) {
       TT t = static_cast<TT>(u[i]) * static_cast<TT>(v[j]) + w[i + j] + k;
       w[i + j] = static_cast<T>(t);

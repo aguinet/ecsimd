@@ -2,11 +2,11 @@
 #define FPSIMD_BIGINT_MUL_H
 
 #include <eve/wide.hpp>
-#include <eve/function/all.hpp>
 #include <eve/detail/meta.hpp>
 #include <eve/traits/cardinal.hpp>
 
 #include <ecsimd/bignum.h>
+#include <ecsimd/compat.h>
 
 #include <immintrin.h>
 
@@ -68,10 +68,10 @@ static auto
   auto ret_dbl = eve::zero(eve::as<ret_dbl_type>());
   const eve::wide<dbl_limb_type, cardinal> low_mask(std::numeric_limits<limb_type>::max());
 
-  eve::detail::for_<0, 1, nlimbs>([&](auto i_) EVE_LAMBDA_FORCEINLINE {
+  eve::detail::for_<0, 1, nlimbs>([&](auto i_) ECSIMD_LAMBDA_FORCEINLINE {
     constexpr auto i = decltype(i_)::value;
     auto highprev = eve::zero(eve::as<eve::wide<dbl_limb_type, cardinal>>());
-    eve::detail::for_<0, 1, nlimbs>([&](auto j_) EVE_LAMBDA_FORCEINLINE {
+    eve::detail::for_<0, 1, nlimbs>([&](auto j_) ECSIMD_LAMBDA_FORCEINLINE {
       constexpr auto j = decltype(j_)::value;
       constexpr auto retlimb = i+j;
 
@@ -107,7 +107,7 @@ static auto
   auto ret = eve::zero(eve::as<ret_type>());
 
   eve::wide<dbl_limb_type, cardinal> highprev;
-  eve::detail::for_<0, 1, nlimbs>([&](auto i_) EVE_LAMBDA_FORCEINLINE {
+  eve::detail::for_<0, 1, nlimbs>([&](auto i_) ECSIMD_LAMBDA_FORCEINLINE {
     constexpr auto i = decltype(i_)::value;
 
     // TODO: zero extend of b could be done once. Is this optimized by the compiler?
@@ -139,7 +139,7 @@ static auto
   const eve::wide<dbl_limb_type, cardinal> low_mask(std::numeric_limits<limb_type>::max());
 
   // Compute the cross products
-  eve::detail::for_<0,1,nlimbs>([&](auto i_) EVE_LAMBDA_FORCEINLINE {
+  eve::detail::for_<0,1,nlimbs>([&](auto i_) ECSIMD_LAMBDA_FORCEINLINE {
     constexpr auto i = decltype(i_)::value;
 
     auto t = sqr_wide(eve::get<i>(a));
@@ -150,7 +150,7 @@ static auto
     prevs[0] = t >> limb_bits;
     prevs[1] = eve::zero(eve::as<WDL>());
 
-    eve::detail::for_<i+1,1,nlimbs>([&](auto j_) EVE_LAMBDA_FORCEINLINE {
+    eve::detail::for_<i+1,1,nlimbs>([&](auto j_) ECSIMD_LAMBDA_FORCEINLINE {
       constexpr auto j = decltype(j_)::value;
       static_assert(i != j);
       constexpr auto retlimb = i+j;

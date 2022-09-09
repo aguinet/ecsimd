@@ -19,9 +19,7 @@
 namespace cbn {
 
 template <size_t N, std::unsigned_integral T = uint64_t>
-struct big_int : std::array<T, N> {
-  static constexpr size_t nlimbs = N;
-};
+struct big_int : std::array<T, N> {};
 
 }
 

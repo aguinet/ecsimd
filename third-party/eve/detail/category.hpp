@@ -1,8 +1,8 @@
 //==================================================================================================
 /*
   EVE - Expressive Vector Engine
-  Copyright : EVE Contributors & Maintainers
-  SPDX-License-Identifier: MIT
+  Copyright : EVE Project Contributors
+  SPDX-License-Identifier: BSL-1.0
 */
 //==================================================================================================
 #pragma once
@@ -18,29 +18,31 @@ namespace eve::detail
   enum class category : std::uint32_t
   {
     // Building blocks
-    int_      = 0x01000000,
-    uint_     = 0x02000000,
-    float_    = 0x04000000,
-    unsigned_ = 0x02000000,
-    integer_  = int_ | uint_,
-    signed_   = int_ | float_,
-    size64_   = 0x00080000,
-    size32_   = 0x00040000,
-    size16_   = 0x00020000,
-    size8_    = 0x00010000,
-    invalid   = 0x00000000,
+    invalid   = 0x000000000,
+    signed_   = 0x010000000,
+    unsigned_ = 0x020000000,
+    integer_  = 0x001000000,
+    float_    = 0x002000000 | signed_,
+    int_      = integer_    | signed_,
+    uint_     = integer_    | unsigned_,
+    size8_    = 0x000100000,
+    size16_   = 0x000200000,
+    size32_   = 0x000400000,
+    size64_   = 0x000800000,
 
     // All known native float64
-    float64x1   = float_ | size64_ | 1,
-    float64x2   = float_ | size64_ | 2,
-    float64x4   = float_ | size64_ | 4,
-    float64x8   = float_ | size64_ | 8,
+    float64     = float_  | size64_,
+    float64x1   = float64 | 1,
+    float64x2   = float64 | 2,
+    float64x4   = float64 | 4,
+    float64x8   = float64 | 8,
 
     // All known native float32
-    float32x2   = float_ | size32_ | 2  ,
-    float32x4   = float_ | size32_ | 4  ,
-    float32x8   = float_ | size32_ | 8  ,
-    float32x16  = float_ | size32_ | 16 ,
+    float32     = float_  | size32_,
+    float32x2   = float32 | 2  ,
+    float32x4   = float32 | 4  ,
+    float32x8   = float32 | 8  ,
+    float32x16  = float32 | 16 ,
 
     // All known native ?int8
      int8    =  int_   | size8_,
@@ -101,15 +103,10 @@ namespace eve::detail
     return static_cast<category>(to_int(a) | to_int(b));
   }
 
-  EVE_FORCEINLINE constexpr bool operator&&(category a, category b) noexcept
-  {
-    return (to_int(a) & to_int(b)) != 0;
-  }
-
   template<typename... Cat>
   EVE_FORCEINLINE constexpr bool match(category a, Cat... tst) noexcept
   {
-    return ((a == tst) || ...);
+    return (((to_int(a) & to_int(tst)) == to_int(tst)) || ...);
   }
 
   template<typename W> EVE_FORCEINLINE constexpr category categorize() noexcept
@@ -127,7 +124,7 @@ namespace eve::detail
 
       // Base type size & Cardinal
       constexpr auto card = static_cast<category>(sizeof(storage_t) / sizeof(type));
-      constexpr auto sz   = static_cast<category>(sizeof(type) << 16);
+      constexpr auto sz   = static_cast<category>(sizeof(type) << 20);
 
       return value | sz | card;
     }

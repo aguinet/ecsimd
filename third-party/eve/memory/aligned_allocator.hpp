@@ -1,15 +1,20 @@
 //==================================================================================================
 /*
   EVE - Expressive Vector Engine
-  Copyright : EVE Contributors & Maintainers
-  SPDX-License-Identifier: MIT
+  Copyright : EVE Project Contributors
+  SPDX-License-Identifier: BSL-1.0
 */
 //==================================================================================================
 #pragma once
 
 #include <eve/memory/align.hpp>
+#include <eve/detail/spy.hpp>
 #include <cstddef>
 #include <bit>
+
+#if defined(SPY_COMPILER_IS_MSVC)
+#include <malloc.h>
+#endif
 
 namespace eve
 {
@@ -62,15 +67,37 @@ namespace eve
     //! @brief Allocates aligned, uninitialized storage for `n` elements of type `T`.
     value_type *allocate(std::size_t n)
     {
-      auto nbelem = align(n * sizeof(value_type), over{alignment()});
-      return static_cast<value_type *>( std::aligned_alloc(alignment(), nbelem) );
+      return static_cast<value_type*>( allocate_aligned(n * sizeof(value_type),alignment()));
+    }
+
+    void * allocate_aligned(std::size_t n, std::size_t a)
+    {
+      auto sz = align(n, over{a});
+
+      #if defined(SPY_COMPILER_IS_MSVC)
+      return  _aligned_malloc(sz,a);
+      #else
+      return std::aligned_alloc(a, sz);
+      #endif
     }
 
     //! @brief Deallocates aligned storage
     void deallocate(value_type *p, std::size_t) noexcept
     {
-      std::free((void *)p);
+      deallocate_aligned((void *)p);
     }
+
+    void deallocate_aligned(void* ptr)
+    {
+      if(!ptr) return;
+
+      #if defined(SPY_COMPILER_IS_MSVC)
+      _aligned_free(ptr);
+      #else
+      std::free(ptr);
+      #endif
+    }
+
   };
   //================================================================================================
   //! @}

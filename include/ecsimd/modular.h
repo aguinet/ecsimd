@@ -30,7 +30,7 @@ auto mod_sub(WBN const& a, WBN const& b, WBN const& p)
   const WBN diff_add = add_no_carry(diff, p);
 
   WBN ret;
-  eve::detail::for_<0,1,bn_nlimbs<WBN>>([&](auto i_) EVE_LAMBDA_FORCEINLINE {
+  eve::detail::for_<0,1,bn_nlimbs<WBN>>([&](auto i_) ECSIMD_LAMBDA_FORCEINLINE {
     constexpr auto i = decltype(i_)::value;
     const auto vd  = eve::get<i>(diff);
     const auto vda = eve::get<i>(diff_add);

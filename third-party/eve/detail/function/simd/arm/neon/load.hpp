@@ -1,8 +1,8 @@
 //==================================================================================================
 /*
   EVE - Expressive Vector Engine
-  Copyright : EVE Contributors & Maintainers
-  SPDX-License-Identifier: MIT
+  Copyright : EVE Project Contributors
+  SPDX-License-Identifier: BSL-1.0
 */
 //==================================================================================================
 #pragma once
@@ -12,6 +12,7 @@
 #include <eve/detail/category.hpp>
 #include <eve/detail/implementation.hpp>
 #include <eve/detail/spy.hpp>
+#include <eve/module/core/regular/unalign.hpp>
 #include <eve/memory/aligned_ptr.hpp>
 
 namespace eve::detail
@@ -23,7 +24,7 @@ namespace eve::detail
                                   )
   requires arm_abi<abi_t<T, N>>
   {
-    auto ptr = as_raw_pointer(p);
+    auto ptr = unalign(p);
 
     if constexpr( N::value * sizeof(T) >= arm_64_::bytes )
     {

@@ -1,8 +1,8 @@
 //==================================================================================================
 /*
   EVE - Expressive Vector Engine
-  Copyright : EVE Contributors & Maintainers
-  SPDX-License-Identifier: MIT
+  Copyright : EVE Project Contributors
+  SPDX-License-Identifier: BSL-1.0
 */
 //==================================================================================================
 #pragma once
@@ -33,11 +33,3 @@ namespace eve
 }
 
 #include <eve/detail/function/simd/common/compress_store_impl.hpp>
-
-#if defined(EVE_INCLUDE_X86_HEADER)
-#  include <eve/detail/function/simd/x86/compress_store_impl.hpp>
-#endif
-
-#if defined(EVE_INCLUDE_ARM_HEADER)
-#    include <eve/detail/function/simd/arm/neon/compress_store_impl.hpp>
-#endif

@@ -1,8 +1,8 @@
 //==================================================================================================
 /*
   EVE - Expressive Vector Engine
-  Copyright : EVE Contributors & Maintainers
-  SPDX-License-Identifier: MIT
+  Copyright : EVE Project Contributors
+  SPDX-License-Identifier: BSL-1.0
 */
 //==================================================================================================
 #pragma once
@@ -60,11 +60,6 @@ namespace eve
     using type          = scalar_cardinal;
     using combined_type = fixed<2>;
   };
-
-  //================================================================================================
-  //! @brief Cardinal object representing the cardinal of [scalar values](@ref eve::scalar_value)
-  //================================================================================================
-  inline constexpr scalar_cardinal const scalar = {};
 
   template<std::ptrdiff_t Cardinal>
   inline constexpr fixed<Cardinal> const lane = {};

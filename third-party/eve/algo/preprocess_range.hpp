@@ -1,17 +1,17 @@
 //==================================================================================================
 /*
   EVE - Expressive Vector Engine
-  Copyright : EVE Contributors & Maintainers
-  SPDX-License-Identifier: MIT
+  Copyright : EVE Project Contributors
+  SPDX-License-Identifier: BSL-1.0
 */
 //==================================================================================================
 #pragma once
 
+#include <eve/module/core.hpp>
 #include <eve/algo/detail/preprocess_range.hpp>
 
-#include <eve/algo/concepts/iterator_cardinal.hpp>
-#include <eve/algo/concepts/value_type.hpp>
 #include <eve/algo/ptr_iterator.hpp>
+#include <eve/traits.hpp>
 
 #include <iterator>
 #include <memory>
@@ -25,14 +25,14 @@ namespace eve::algo
     template <typename T, typename A>
     EVE_FORCEINLINE auto ptr_to_iterator(eve::aligned_ptr<T, A> ptr)
     {
-      return aligned_ptr_iterator<T, A>{ptr};
+      return ptr_iterator<eve::aligned_ptr<T, A>, A>{ptr};
     }
 
     template <typename T>
     EVE_FORCEINLINE auto ptr_to_iterator(T* ptr)
     {
       using N          = eve::fixed<eve::expected_cardinal_v<std::remove_const_t<T>>>;
-      return unaligned_ptr_iterator<T, N>{ptr};
+      return ptr_iterator<T*, N>{ptr};
     }
 
     template <typename Traits, typename I>
@@ -85,15 +85,11 @@ namespace eve::algo
 
     auto deduced = []
     {
-      if constexpr( !partially_aligned_iterator<I> )
-        return traits {};
-      else
-      {
-        if constexpr( std::same_as<I, S> && !always_aligned_iterator<I> )
-          return algo::traits(no_aligning, divisible_by_cardinal);
-        else
-          return algo::traits(no_aligning);
-      }
+      if constexpr( partially_aligned_iterator<I> &&
+                    std::same_as<I, S> &&
+                    !always_aligned_iterator<I> )
+          return algo::traits(divisible_by_cardinal);
+      else return algo::traits();
     }();
 
     return preprocess_range_result { default_to(traits_, deduced), f, l};

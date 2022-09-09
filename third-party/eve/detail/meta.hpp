@@ -1,8 +1,8 @@
 //==================================================================================================
 /*
   EVE - Expressive Vector Engine
-  Copyright : EVE Contributors & Maintainers
-  SPDX-License-Identifier: MIT
+  Copyright : EVE Project Contributors
+  SPDX-License-Identifier: BSL-1.0
 */
 //==================================================================================================
 #pragma once
@@ -88,22 +88,6 @@ namespace eve::detail
   {
     using type = T;
   };
-
-  // Extract value_type from type
-  template<typename T> struct value_type
-  {
-    using type = T;
-  };
-
-  template<typename T>
-  requires requires { typename T::value_type; }
-  struct value_type<T>
-  {
-    using type = typename T::value_type;
-  };
-
-  template<typename T>
-  using value_type_t    = typename value_type<T>::type;
 
   // Extract abi_type from type
   template<typename T, typename Enable = void>
@@ -323,15 +307,6 @@ namespace eve::detail
 
   ///////////////////////////////////////////////////////////////////
 
-  // Extract the sign of a type
-  template<typename T>
-  struct sign_of : std::conditional<std::is_signed_v<value_type_t<T>>, signed, unsigned>
-  {
-  };
-
-  template<typename T>
-  using sign_of_t = typename sign_of<T>::type;
-
   // Generate integral types from sign + size
   template<std::size_t Size>
   struct make_floating_point;
@@ -429,4 +404,18 @@ namespace eve::detail
   {
     return for_until_impl_<Begin, Step>(std::make_integer_sequence<decltype(Begin),(End - Begin) / Step>{}, f);
   }
+
+  // instance concept
+  template <typename T, template <typename ...> class Templ>
+  struct instance_of_impl : std::false_type {};
+
+  template <typename ...Args, template <typename ...> class Templ>
+  struct instance_of_impl<Templ<Args...>, Templ> : std::true_type {};
+
+  template <typename T, template <typename ...> class Templ>
+  concept instance_of = instance_of_impl<T, Templ>::value;
+
+  // one_of concept
+  template<typename T, typename... Ts>
+  concept one_of = (std::same_as<T,Ts> || ... || false);
 }

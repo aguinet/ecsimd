@@ -1,13 +1,13 @@
 //==================================================================================================
 /*
   EVE - Expressive Vector Engine
-  Copyright : EVE Contributors & Maintainers
-  SPDX-License-Identifier: MIT
+  Copyright : EVE Project Contributors
+  SPDX-License-Identifier: BSL-1.0
 */
 //==================================================================================================
 #pragma once
 
-#include <eve/forward.hpp>
+#include <eve/detail/wide_forward.hpp>
 #include <type_traits>
 
 namespace eve
@@ -22,7 +22,7 @@ namespace eve
   //!
   //!   For a given type `T`, computes the type of its inner elements.
   //!
-  //!   @tparam T Type to process//!
+  //!   @tparam T Type to process
   //!
   //!   #### Member types
   //!

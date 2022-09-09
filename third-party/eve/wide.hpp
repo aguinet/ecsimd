@@ -1,18 +1,11 @@
 //==================================================================================================
 /*
   EVE - Expressive Vector Engine
-  Copyright : EVE Contributors & Maintainers
-  SPDX-License-Identifier: MIT
+  Copyright : EVE Project Contributors
+  SPDX-License-Identifier: BSL-1.0
 */
 //==================================================================================================
 #pragma once
 
-//================================================================================================
-//! @addtogroup simd
-//! @{
-//!   @defgroup simd_types  SIMD related types
-//!   @brief Types and functions wrappers for SIMD registers and related operations
-//! @}
-//================================================================================================
 #include <eve/arch/spec.hpp>
 #include <eve/arch/wide.hpp>

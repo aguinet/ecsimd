@@ -55,17 +55,6 @@ constexpr auto mod_exp(big_int<N1, T> a, big_int<N2, T> exp,
   return montgomery_mul(result, big_int<N, T>{1}, modulus);
 }
 
-template <class T, T... Modulus>
-struct MongomeryScalar<std::integer_sequence<T, Modulus...>>
-{
-  constexpr auto N = sizeof...(Modulus);
-  constexpr big_int<N, T> m{Modulus...};
-  constexpr auto R_mod_m = div(detail::unary_encoding<N, N + 1>(), m).remainder;
-  constexpr auto Rsq_mod_m = div(detail::unary_encoding<2 * N, 2 * N + 1>(), m).remainder;
-
-  
-};
-
 template <std::size_t N1, std::size_t N2, std::size_t N, typename T>
 constexpr auto mod_exp(big_int<N1, T> a, big_int<N2, T> exp,
                        big_int<N, T> m) {

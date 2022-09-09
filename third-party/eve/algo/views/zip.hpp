@@ -1,12 +1,13 @@
 //==================================================================================================
 /*
   EVE - Expressive Vector Engine
-  Copyright : EVE Contributors & Maintainers
-  SPDX-License-Identifier: MIT
+  Copyright : EVE Project Contributors
+  SPDX-License-Identifier: BSL-1.0
 */
 //==================================================================================================
 #pragma once
 
+#include <eve/module/core.hpp>
 #include <eve/algo/as_range.hpp>
 #include <eve/algo/concepts/relaxed.hpp>
 #include <eve/algo/concepts/types_to_consider.hpp>
@@ -25,7 +26,7 @@
 namespace eve::algo::views
 {
   //================================================================================================
-  //! @addtogroup eve.algo.views
+  //! @addtogroup views
   //! @{
   //!    @struct zip_range
   //!    @brief  A `relaxed_range` on top of multiple `relaxed_range`.
@@ -52,7 +53,7 @@ namespace eve::algo::views
   }
 
   //================================================================================================
-  //! @addtogroup eve.algo.views
+  //! @addtogroup views
   //! @{
   //!    @var zip
   //!    @brief  Given relaxed_iterors and relaxed ranges, zips them together
@@ -116,13 +117,13 @@ namespace eve::algo::views
 
       if constexpr( traits_type::contains(force_type_key) )
       {
-        return rbr::get_type_t<traits_type, force_type_key> {};
+        return rbr::result::fetch_t<force_type_key, traits_type> {};
       }
       else
       {
         using common_zip = eve::common_type<value_type_t<std::remove_cvref_t<Components>>...>;
 
-        using Param = rbr::get_type_t<traits_type, common_with_types_key>;
+        using Param = rbr::result::fetch_t<common_with_types_key,traits_type>;
 
         return []<typename... ParamTypes, typename... ZipTypes>(eve::common_type<ParamTypes...>,
                                                                 eve::common_type<ZipTypes...>)

@@ -1,8 +1,8 @@
 //==================================================================================================
 /*
   EVE - Expressive Vector Engine
-  Copyright : EVE Contributors & Maintainers
-  SPDX-License-Identifier: MIT
+  Copyright : EVE Project Contributors
+  SPDX-License-Identifier: BSL-1.0
 */
 //==================================================================================================
 #pragma once
@@ -19,17 +19,8 @@ namespace eve::detail
   };
 
   template<typename R>
-  concept has_random_access = requires(R const& r)
-  {
-    { r[0] };
-  };
-
-  template<typename R>
   concept has_indexed_get = requires(R const& r)
   {
     { r.get(0) };
   };
-
-  template<typename R>
-  concept random_access_range = range<R> && has_random_access<R>;
 }

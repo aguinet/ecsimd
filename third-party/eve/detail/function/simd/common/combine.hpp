@@ -1,8 +1,8 @@
 //==================================================================================================
 /*
   EVE - Expressive Vector Engine
-  Copyright : EVE Contributors & Maintainers
-  SPDX-License-Identifier: MIT
+  Copyright : EVE Project Contributors
+  SPDX-License-Identifier: BSL-1.0
 */
 //==================================================================================================
 #pragma once
@@ -10,7 +10,7 @@
 #include <eve/detail/abi.hpp>
 #include <eve/detail/is_native.hpp>
 #include <eve/detail/meta.hpp>
-#include <eve/function/bit_cast.hpp>
+#include <eve/module/core/regular/bit_cast.hpp>
 #include <eve/forward.hpp>
 
 namespace eve::detail

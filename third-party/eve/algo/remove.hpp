@@ -1,21 +1,20 @@
 //==================================================================================================
 /*
   EVE - Expressive Vector Engine
-  Copyright : EVE Contributors & Maintainers
-  SPDX-License-Identifier: MIT
+  Copyright : EVE Project Contributors
+  SPDX-License-Identifier: BSL-1.0
 */
 //==================================================================================================
 #pragma once
 
+#include <eve/module/core.hpp>
 #include <eve/algo/array_utils.hpp>
 #include <eve/algo/concepts.hpp>
 #include <eve/algo/common_forceinline_lambdas.hpp>
 #include <eve/algo/for_each_iteration.hpp>
 #include <eve/algo/preprocess_range.hpp>
 #include <eve/algo/traits.hpp>
-#include <eve/algo/unalign.hpp>
 
-#include <eve/function/compress_store.hpp>
 
 #include <array>
 
@@ -57,7 +56,7 @@ namespace eve::algo
 
       auto iteration = algo::for_each_iteration(processed.traits(), processed.begin(), processed.end());
       auto out = iteration.base;
-      delegate<unaligned_t<decltype(out)>, P> d{out.unaligned(), p};
+      delegate<unaligned_t<decltype(out)>, P> d{unalign(out), p};
       iteration(d);
       return unalign(rng.begin()) + (d.out - processed.begin());
     }

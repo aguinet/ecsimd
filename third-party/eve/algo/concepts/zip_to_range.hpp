@@ -1,12 +1,13 @@
 //==================================================================================================
 /*
   EVE - Expressive Vector Engine
-  Copyright : EVE Contributors & Maintainers
-  SPDX-License-Identifier: MIT
+  Copyright : EVE Project Contributors
+  SPDX-License-Identifier: BSL-1.0
 */
 //==================================================================================================
 #pragma once
 
+#include <eve/module/core.hpp>
 #include <eve/algo/concepts/detail.hpp>
 #include <eve/algo/concepts/relaxed.hpp>
 
@@ -22,7 +23,7 @@ namespace eve::algo
   };
 
   template <typename T>
-  concept zipped_range = detail::instance_of<std::remove_cvref_t<T>, views::zip_range>;
+  concept zipped_range = eve::detail::instance_of<std::remove_cvref_t<T>, views::zip_range>;
 
   template <typename T>
   concept zipped_range_pair = zipped_range<T> && (std::tuple_size_v<std::remove_cvref_t<T>> == 2);

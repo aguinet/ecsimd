@@ -1,8 +1,8 @@
 //==================================================================================================
 /*
   EVE - Expressive Vector Engine
-  Copyright : EVE Contributors & Maintainers
-  SPDX-License-Identifier: MIT
+  Copyright : EVE Project Contributors
+  SPDX-License-Identifier: BSL-1.0
 */
 //==================================================================================================
 #pragma once
@@ -64,6 +64,11 @@ namespace eve::detail
     typename pointer_traits<Ptr>::value_type;
   };
 
+  template <typename Ptr>
+  concept scalar_pointer = std::is_pointer_v<Ptr> || requires (Ptr ptr) {
+    { []<typename T, typename N>(aligned_ptr<T, N>) {}(ptr) };
+  };
+
   template<typename T, typename Ptr> struct dereference_as;
 
   template<typename T, typename Ptr>
@@ -80,13 +85,6 @@ namespace eve::detail
     using base = kumi::tuple<typename pointer_traits<Ptrs>::value_type...>;
     static constexpr bool value = std::same_as<T,base>;
   };
-
-  template <typename T>
-  EVE_FORCEINLINE auto as_raw_pointer(T p)
-  {
-    if constexpr ( !std::is_pointer_v<T> ) return p.get();
-    else                                   return p;
-  }
 
   template <typename U, typename T, typename Lanes>
   EVE_FORCEINLINE auto ptr_cast(eve::aligned_ptr<T, Lanes> p)

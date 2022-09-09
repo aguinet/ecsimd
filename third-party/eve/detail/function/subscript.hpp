@@ -1,8 +1,8 @@
 //==================================================================================================
 /*
   EVE - Expressive Vector Engine
-  Copyright : EVE Contributors & Maintainers
-  SPDX-License-Identifier: MIT
+  Copyright : EVE Project Contributors
+  SPDX-License-Identifier: BSL-1.0
 */
 //==================================================================================================
 #pragma once
@@ -12,4 +12,9 @@
 
 #if defined(EVE_INCLUDE_X86_HEADER)
 #  include <eve/detail/function/simd/x86/subscript.hpp>
+#endif
+
+
+#if defined(EVE_INCLUDE_SVE_HEADER)
+#  include <eve/detail/function/simd/arm/sve/subscript.hpp>
 #endif

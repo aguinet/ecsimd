@@ -10,7 +10,7 @@
 #include <ctbignum/io.hpp>
 #include <ctbignum/relational_ops.hpp>
 
-#include <eve/function/all.hpp>
+#include <eve/module/core/regular/all.hpp>
 
 #include <gtest/gtest.h>
 

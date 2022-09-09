@@ -1,16 +1,17 @@
 //==================================================================================================
 /*
   EVE - Expressive Vector Engine
-  Copyright : EVE Contributors & Maintainers
-  SPDX-License-Identifier: MIT
+  Copyright : EVE Project Contributors
+  SPDX-License-Identifier: BSL-1.0
 */
 //==================================================================================================
 #pragma once
 
 #include <eve/detail/kumi.hpp>
-#include <eve/forward.hpp>
+#include <eve/detail/wide_forward.hpp>
 #include <eve/traits/element_type.hpp>
 #include <eve/traits/is_logical.hpp>
+#include <eve/concept/logical.hpp>
 
 #include <concepts>
 #include <type_traits>
@@ -131,18 +132,6 @@ namespace eve
   template<typename T> concept floating_scalar_value          = scalar_value<T> && std::floating_point<T>;
 
   //================================================================================================
-  //! @concept logical_scalar_value
-  //! @brief Specify that a type represents a scalar value
-  //!
-  //! The concept `logical_scalar_value<T>` is satisfied if and only if T is logical and scalar_value
-  //!
-  //! @groupheader{Examples}
-  //! - `logical<float>`
-  //! - `logical<int>`
-  //================================================================================================
-  template<typename T> concept logical_scalar_value           = scalar_value<T> && is_logical_v<T>;
-
-  //================================================================================================
   //! @concept real_scalar_value
   //! @brief Specify that a type represents a scalar value
   //!
@@ -152,7 +141,7 @@ namespace eve
   //! - `float`
   //! - `int`
   //================================================================================================
-  template<typename T> concept real_scalar_value              = scalar_value<T> && std::same_as< detail::value_type_t<T>, element_type_t<T>>;
+  template<typename T> concept real_scalar_value              = scalar_value<T> && std::is_arithmetic_v<T>;
 
   //================================================================================================
   //! @concept floating_real_scalar_value
@@ -164,7 +153,7 @@ namespace eve
   //! - `float`
   //! - `double`
   //================================================================================================
-  template<typename T> concept floating_real_scalar_value     = real_scalar_value<T> && std::floating_point<detail::value_type_t<T>>;
+  template<typename T> concept floating_real_scalar_value     = real_scalar_value<T> && std::floating_point<element_type_t<T>>;
 
   //================================================================================================
   //! @concept integral_real_scalar_value
@@ -176,5 +165,5 @@ namespace eve
   //! - `int`
   //! - `unsigned int`
   //================================================================================================
-  template<typename T> concept integral_real_scalar_value     = real_scalar_value<T> && std::integral<detail::value_type_t<T>>;
+  template<typename T> concept integral_real_scalar_value     = real_scalar_value<T> && std::integral<element_type_t<T>>;
 }

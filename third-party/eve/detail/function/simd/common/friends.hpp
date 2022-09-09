@@ -1,16 +1,16 @@
 //==================================================================================================
 /*
   EVE - Expressive Vector Engine
-  Copyright : EVE Contributors & Maintainers
-  SPDX-License-Identifier: MIT
+  Copyright : EVE Project Contributors
+  SPDX-License-Identifier: BSL-1.0
 */
 //==================================================================================================
 #pragma once
 
 #include <eve/concept/value.hpp>
 #include <eve/concept/compatible.hpp>
-#include <eve/constant/allbits.hpp>
-#include <eve/constant/signmask.hpp>
+#include <eve/module/core/constant/allbits.hpp>
+#include <eve/module/core/constant/signmask.hpp>
 #include <eve/detail/apply_over.hpp>
 #include <eve/detail/function/bit_cast.hpp>
 #include <eve/detail/is_native.hpp>
@@ -77,8 +77,8 @@ namespace eve::detail
     {
       auto [vl, vh] = v.slice();
       auto [wl, wh] = w.slice();
-      return logical<wide<T,N>> { self_logand(EVE_CURRENT_API{},vl, wl)
-                                , self_logand(EVE_CURRENT_API{},vh, wh)
+      return logical<wide<T,N>> { self_logand(eve::current_api,vl, wl)
+                                , self_logand(eve::current_api,vh, wh)
                                 };
     }
     else if constexpr ( !abi_t::is_wide_logical )
@@ -133,8 +133,8 @@ namespace eve::detail
     {
       auto [vl, vh] = v.slice();
       auto [wl, wh] = w.slice();
-      return logical<wide<T,N>> { self_logor(EVE_CURRENT_API{},vl, wl)
-                                , self_logor(EVE_CURRENT_API{},vh, wh)
+      return logical<wide<T,N>> { self_logor(eve::current_api,vl, wl)
+                                , self_logor(eve::current_api,vh, wh)
                                 };
     }
     else if constexpr ( !abi_t::is_wide_logical )
@@ -178,7 +178,7 @@ namespace eve::detail
   }
 
   //================================================================================================
-  template<real_simd_value Wide>
+  template<simd_value Wide>
   EVE_FORCEINLINE auto self_lognot(Wide const& v) noexcept
   {
     if constexpr(has_native_abi_v<Wide>)

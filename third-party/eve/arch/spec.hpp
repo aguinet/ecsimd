@@ -1,8 +1,8 @@
 //==================================================================================================
 /*
   EVE - Expressive Vector Engine
-  Copyright : EVE Contributors & Maintainers
-  SPDX-License-Identifier: MIT
+  Copyright : EVE Project Contributors
+  SPDX-License-Identifier: BSL-1.0
 */
 //==================================================================================================
 #pragma once
@@ -10,7 +10,8 @@
 #if !defined(EVE_NO_SIMD)
 #  include <eve/arch/x86/spec.hpp>
 #  include <eve/arch/ppc/spec.hpp>
-#  include <eve/arch/arm/spec.hpp>
+#  include <eve/arch/arm/sve/spec.hpp>
+#  include <eve/arch/arm/neon/spec.hpp>
 #endif
 
 #include <eve/arch/cpu/spec.hpp>
@@ -22,15 +23,20 @@ namespace eve
   //================================================================================================
   // Local renaming for spy SIMD detector
 # if defined(EVE_NO_SIMD)
-  inline constexpr auto current_api     = spy::undefined_simd_;
-  inline constexpr bool supports_simd   = false;
+  inline constexpr undefined_simd_ current_api  = {};
+  inline constexpr bool supports_simd           = false;
 # else
 #   if !defined(EVE_INCOMPLETE_AVX512_SUPPORT)
-  inline constexpr auto current_api   = spy::simd_instruction_set;
+  inline constexpr EVE_CURRENT_API  current_api = {};
 #   else
-  inline constexpr auto current_api   = spy::avx2_;
+  inline constexpr eve::avx2_       current_api = {};
 #   endif
   inline constexpr bool supports_simd = true;
 # endif
+
+  //================================================================================================
+  // Types & object s for ABI/API detection
+  using current_abi_type = EVE_CURRENT_ABI;
+  using current_api_type = std::decay_t<decltype(current_api)>;
 }
 

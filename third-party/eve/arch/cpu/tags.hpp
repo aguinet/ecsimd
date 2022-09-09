@@ -1,8 +1,8 @@
 //==================================================================================================
 /*
   EVE - Expressive Vector Engine
-  Copyright : EVE Contributors & Maintainers
-  SPDX-License-Identifier: MIT
+  Copyright : EVE Project Contributors
+  SPDX-License-Identifier: BSL-1.0
 */
 //==================================================================================================
 #pragma once
@@ -12,9 +12,32 @@
 
 #include <cstddef>
 #include <concepts>
+#include <ostream>
 
 namespace eve
 {
+  //================================================================================================
+  // SPY SIMD API wrapper
+  template<typename Base, auto API> struct simd_api : Base
+  {
+    using api_type = std::decay_t<decltype(API)>;
+
+    constexpr api_type const& value() const noexcept { return API; }
+
+    friend std::ostream& operator<<(std::ostream& os, simd_api) { return os << API; }
+
+    template<typename B, auto O>
+    friend constexpr bool operator==(simd_api , simd_api<B,O> ) noexcept { return API == O; }
+    template<typename B, auto O>
+    friend constexpr bool operator> (simd_api , simd_api<B,O> ) noexcept { return API >  O; }
+    template<typename B, auto O>
+    friend constexpr bool operator>=(simd_api , simd_api<B,O> ) noexcept { return API >= O; }
+    template<typename B, auto O>
+    friend constexpr bool operator< (simd_api , simd_api<B,O> ) noexcept { return API <  O; }
+    template<typename B, auto O>
+    friend constexpr bool operator<=(simd_api , simd_api<B,O> ) noexcept { return API <= O; }
+  };
+
   //================================================================================================
   // Dispatching tag for generic implementation
   struct cpu_
@@ -28,13 +51,16 @@ namespace eve
     using parent  = cpu_;
   };
 
-# if defined(SPY_SIMD_IS_X86_AVX512)
+# if defined(SPY_SIMD_IS_X86_AVX512) || defined(SPY_SIMD_IS_ARM_FIXED_SVE)
 #define EVE_WIDE_LOGICAL_NAMESPACE
 #define EVE_BIT_LOGICAL_NAMESPACE   inline
 #else
 #define EVE_WIDE_LOGICAL_NAMESPACE  inline
 #define EVE_BIT_LOGICAL_NAMESPACE
 #endif
+
+  using undefined_simd_ = simd_api<simd_, spy::undefined_simd_>;
+  inline constexpr undefined_simd_ undefined_simd   = {};
 
   //================================================================================================
   // Dispatching tag for emulated SIMD implementation of large register

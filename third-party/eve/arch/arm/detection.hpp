@@ -1,13 +1,14 @@
 //==================================================================================================
 /*
   EVE - Expressive Vector Engine
-  Copyright : EVE Contributors & Maintainers
-  SPDX-License-Identifier: MIT
+  Copyright : EVE Project Contributors
+  SPDX-License-Identifier: BSL-1.0
 */
 //==================================================================================================
 #pragma once
 
-#include <eve/arch/arm/tags.hpp>
+#include <eve/arch/arm/sve/tags.hpp>
+#include <eve/arch/arm/neon/tags.hpp>
 
 #if defined( SPY_SIMD_IS_ARM )
   #if defined( SPY_OS_IS_LINUX )

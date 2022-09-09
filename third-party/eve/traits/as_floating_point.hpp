@@ -1,14 +1,14 @@
 //==================================================================================================
 /*
   EVE - Expressive Vector Engine
-  Copyright : EVE Contributors & Maintainers
-  SPDX-License-Identifier: MIT
+  Copyright : EVE Project Contributors
+  SPDX-License-Identifier: BSL-1.0
 */
 //==================================================================================================
 #pragma once
 
-#include <eve/forward.hpp>
 #include <eve/detail/meta.hpp>
+#include <eve/detail/wide_forward.hpp>
 
 namespace eve
 {

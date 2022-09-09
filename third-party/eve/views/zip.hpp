@@ -1,8 +1,8 @@
 //==================================================================================================
 /*
   EVE - Expressive Vector Engine
-  Copyright : EVE Contributors & Maintainers
-  SPDX-License-Identifier: MIT
+  Copyright : EVE Project Contributors
+  SPDX-License-Identifier: BSL-1.0
 */
 //==================================================================================================
 #pragma once
@@ -12,8 +12,9 @@
 namespace eve::views
 {
   //================================================================================================
-  //! @addtogroup eve.views
+  //! @addtogroup views
   //! @{
+  //!
   //!    @var zip
   //!    @brief a shorthand for `eve::algo::views::zip`.
   //!
@@ -22,9 +23,9 @@ namespace eve::views
   //!
   //!    @struct zip_range
   //!    @brief a shorthand for `eve::algo::views::zip_range`
+  //!
   //! }@
   //================================================================================================
-
   using eve::algo::views::zip;
   using eve::algo::views::zip_iterator;
   using eve::algo::views::zip_range;

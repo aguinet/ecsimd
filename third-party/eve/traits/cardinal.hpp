@@ -1,13 +1,13 @@
 //==================================================================================================
 /*
   EVE - Expressive Vector Engine
-  Copyright : EVE Contributors & Maintainers
-  SPDX-License-Identifier: MIT
+  Copyright : EVE Project Contributors
+  SPDX-License-Identifier: BSL-1.0
 */
 //==================================================================================================
 #pragma once
 
-#include <eve/forward.hpp>
+#include <eve/detail/wide_forward.hpp>
 #include <cstddef>
 
 namespace eve
@@ -45,8 +45,8 @@ namespace eve
   //!   @groupheader{Helper variable template}
   //!
   //!   @code{.cpp}
-  //!   template<typenale Type>
-  //!   inline constexpr auto cardinal_v = cardinal<T>::value;
+  //!   template<typename Type>
+  //!   inline constexpr auto cardinal_v = cardinal<Type>::value;
   //!   @endcode
   //! @}
   //================================================================================================

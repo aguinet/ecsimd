@@ -8,6 +8,7 @@
 #include <ecsimd/shift.h>
 #include <ecsimd/utility.h>
 #include <ecsimd/cmp.h>
+#include <ecsimd/compat.h>
 
 #include <ctbignum/gcd.hpp>
 #include <ctbignum/io.hpp>
@@ -68,7 +69,7 @@ WBN mgry_mul(WBN const& x, WBN const& y) {
           std::numeric_limits<limb_type>::max())};
 
   auto A = eve::zero(eve::as<wide_bignum_p1>());
-  eve::detail::for_<0, 1, nlimbs>([&](auto i_) EVE_LAMBDA_FORCEINLINE {
+  eve::detail::for_<0, 1, nlimbs>([&](auto i_) ECSIMD_LAMBDA_FORCEINLINE {
       constexpr auto i = decltype(i_)::value;
 
       const auto u_i = (eve::get<0>(A) + eve::get<i>(x) * eve::get<0>(y)) * wide_mprime;
@@ -87,7 +88,7 @@ WBN mgry_mul(WBN const& x, WBN const& y) {
       k = z >> limb_bits;
       k2 = z2 >> limb_bits;
 
-      eve::detail::for_<1,1,nlimbs>([&](auto j_) EVE_LAMBDA_FORCEINLINE {
+      eve::detail::for_<1,1,nlimbs>([&](auto j_) ECSIMD_LAMBDA_FORCEINLINE {
         constexpr auto j = decltype(j_)::value;
 
         auto t = mul_wide(eve::get<j>(y), eve::get<i>(x));
@@ -140,7 +141,7 @@ __attribute__((flatten)) auto mgry_reduce(WBN const& a)
 
   auto const& wide_P = mgry_constants<wide_ret_type, P_type>::wide_P;
 
-  eve::detail::for_<0,1,bn_nlimbs<P_type>>([&](auto i_) EVE_LAMBDA_FORCEINLINE {
+  eve::detail::for_<0,1,bn_nlimbs<P_type>>([&](auto i_) ECSIMD_LAMBDA_FORCEINLINE {
     constexpr auto i = decltype(i_)::value;
     auto prod = limb_mul(wide_P, eve::get<i>(accum) * mul_csts::wide_mprime);
     auto prod2 = limb_shift_left<bn_nlimbs<decltype(accum)>, i>(prod);

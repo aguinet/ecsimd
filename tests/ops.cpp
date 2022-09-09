@@ -9,8 +9,8 @@
 #include <ecsimd/literals.h>
 
 #include <eve/logical.hpp>
-#include <eve/function/all.hpp>
-#include <eve/function/none.hpp>
+#include <eve/module/core/regular/all.hpp>
+#include <eve/module/core/regular/none.hpp>
 
 #include <gtest/gtest.h>
 

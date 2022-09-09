@@ -1,8 +1,8 @@
 //==================================================================================================
 /*
   EVE - Expressive Vector Engine
-  Copyright : EVE Contributors & Maintainers
-  SPDX-License-Identifier: MIT
+  Copyright : EVE Project Contributors
+  SPDX-License-Identifier: BSL-1.0
 */
 //==================================================================================================
 #pragma once
@@ -13,7 +13,7 @@
 #include <eve/detail/overload.hpp>
 #include <eve/detail/skeleton.hpp>
 #include <eve/forward.hpp>
-#include <eve/function/combine.hpp>
+#include <eve/module/core/regular/combine.hpp>
 
 namespace eve::detail
 {
@@ -85,5 +85,25 @@ namespace eve::detail
                               );
     }
     else return f(v);
+  }
+
+
+  template<typename Obj, simd_value T>
+  EVE_FORCEINLINE auto apply_over3(Obj f, T const & v, T const &w, T const & z)
+  {
+    if constexpr(has_emulated_abi_v<T> ) return map(f, v, w, z);
+    else if constexpr(has_aggregated_abi_v<T>)
+    {
+      auto  [vlo, vhi] = v.slice();
+      auto  [wlo, whi] = w.slice();
+      auto  [zlo, zhi] = z.slice();
+      auto  [nhi, xhi, dxhi] = f(vhi, whi, zhi);
+      auto  [nlo, xlo, dxlo] = f(vlo, wlo, zlo);
+      return kumi::make_tuple ( eve::combine( nlo, nhi)
+                              , eve::combine( xlo, xhi)
+                              , eve::combine( dxlo, dxhi)
+                              );
+    }
+    else return f(v, w, z);
   }
 }

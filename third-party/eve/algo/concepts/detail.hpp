@@ -1,29 +1,20 @@
 //==================================================================================================
 /*
   EVE - Expressive Vector Engine
-  Copyright : EVE Contributors & Maintainers
-  SPDX-License-Identifier: MIT
+  Copyright : EVE Project Contributors
+  SPDX-License-Identifier: BSL-1.0
 */
 //==================================================================================================
 #pragma once
 
+#include <eve/module/core.hpp>
+#include <eve/detail/meta.hpp>
 #include <compare>
 #include <concepts>
 #include <type_traits>
 
-#include <eve/algo/unalign.hpp>
-
 namespace eve::algo::detail
 {
-  template <typename T, template <typename ...> class Templ>
-  struct instance_of_impl : std::false_type {};
-
-  template <typename ...Args, template <typename ...> class Templ>
-  struct instance_of_impl<Templ<Args...>, Templ> : std::true_type {};
-
-  template <typename T, template <typename ...> class Templ>
-  concept instance_of = detail::instance_of_impl<T, Templ>::value;
-
   template <typename R>
   concept has_begin_end = requires (R&& r) {
       { r.begin() };
@@ -46,7 +37,7 @@ namespace eve::algo::detail
 
   template <typename I>
   concept iterator_operations =
-    std::regular<std::remove_cvref_t<I>> &&
+    std::copyable<std::remove_cvref_t<I>> &&
     std::totally_ordered<std::remove_cvref_t<I>> &&
     requires(std::remove_cvref_t<I> f, std::remove_cvref_t<I> l, std::ptrdiff_t n) {
       { l - f }  -> std::convertible_to<std::ptrdiff_t>;

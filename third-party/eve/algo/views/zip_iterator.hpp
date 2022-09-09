@@ -1,33 +1,31 @@
 //==================================================================================================
 /*
   EVE - Expressive Vector Engine
-  Copyright : EVE Contributors & Maintainers
-  SPDX-License-Identifier: MIT
+  Copyright : EVE Project Contributors
+  SPDX-License-Identifier: BSL-1.0
 */
 //==================================================================================================
 #pragma once
 
+#include <eve/module/core.hpp>
 #include <eve/algo/as_range.hpp>
 #include <eve/algo/concepts/types_to_consider.hpp>
-#include <eve/algo/concepts/iterator_cardinal.hpp>
 #include <eve/algo/iterator_helpers.hpp>
 #include <eve/algo/preprocess_range.hpp>
 
 #include <eve/algo/views/detail/preprocess_zip_range.hpp>
 
-#include <eve/function/compress_store.hpp>
-#include <eve/function/load.hpp>
-#include <eve/function/store.hpp>
 
 #include <eve/detail/kumi.hpp>
 
 #include <array>
 #include <concepts>
+#include <utility>
 
 namespace eve::algo::views
 {
   //================================================================================================
-  //! @addtogroup eve.algo.views
+  //! @addtogroup views
   //! @{
   //!    @struct zip_iterator
   //!    @brief  A `relaxed_iterator` on top of multiple `relaxed_iterator`.
@@ -41,9 +39,42 @@ namespace eve::algo::views
   //! @}
   //================================================================================================
 
-  template <typename ...Is>
-  struct zip_iterator;
+  template <typename ...Is> struct zip_iterator;
 
+  namespace detail
+  {
+    template<typename... Is> struct zip_iterator_common;
+  }
+}
+
+// tuple opt in
+namespace std
+{
+  template<std::size_t idx, typename ...Is>
+  struct  tuple_element<idx, eve::algo::views::zip_iterator<Is...>> : tuple_element<idx, kumi::tuple<Is...>>
+  {
+  };
+
+  template<typename ...Is>
+  struct tuple_size<eve::algo::views::zip_iterator<Is...>> : std::tuple_size<kumi::tuple<Is...>>
+  {
+  };
+
+  template<std::size_t idx, typename ...Is>
+  struct tuple_element<idx, eve::algo::views::detail::zip_iterator_common<Is...>>
+    : tuple_element<idx, kumi::tuple<Is...>>
+  {
+  };
+
+  template<typename ...Is>
+  struct tuple_size<eve::algo::views::detail::zip_iterator_common<Is...>>
+    : std::tuple_size<kumi::tuple<Is...>>
+  {
+  };
+}
+
+namespace eve::algo::views
+{
   namespace detail
   {
     // Don't take always aligned if possible.
@@ -126,14 +157,23 @@ namespace eve::algo::views
 
       explicit zip_iterator_common(Is... is) : storage {is...} {}
 
+      template <typename ...I1s>
+        requires (std::convertible_to<I1s, Is> && ...)
+      zip_iterator_common(zip_iterator<I1s...> x)
+      {
+        storage = kumi::map([]<typename I1, typename I>(I1 from, I) -> I { return from; },
+                            x.storage,
+                            storage);
+      }
+
       EVE_FORCEINLINE friend auto tagged_dispatch(eve::tag::read_, zip_iterator<Is...> self)
       {
         return kumi::map(eve::read, self.storage);
       }
 
-      EVE_FORCEINLINE friend auto tagged_dispatch(eve::tag::write_, zip_iterator<Is...> self, value_type v)
+      EVE_FORCEINLINE friend auto tagged_dispatch(eve::tag::write_, value_type v, zip_iterator<Is...> self)
       {
-        kumi::for_each(eve::write, self.storage, v);
+        kumi::for_each(eve::write, v, self.storage);
       }
 
       EVE_FORCEINLINE operator zip_iterator<unaligned_t<Is>...>() const
@@ -142,7 +182,10 @@ namespace eve::algo::views
             kumi::map([](auto x) { return unalign(x); }, *this)};
       }
 
-      EVE_FORCEINLINE auto unaligned() const { return zip_iterator<unaligned_t<Is>...>(*this); }
+      EVE_FORCEINLINE friend auto tagged_dispatch ( eve::tag::unalign_, zip_iterator<Is...> self )
+      {
+        return zip_iterator<unaligned_t<Is>...>(self);
+      }
 
       template<std::derived_from<zip_iterator_common> Self, compatible_zip_iterators<Self> Other>
       EVE_FORCEINLINE friend bool operator==(Self const &x, Other const &y)
@@ -194,6 +237,61 @@ namespace eve::algo::views
       EVE_FORCEINLINE friend auto tagged_dispatch(convert_, zip_iterator<Is...> self, eve::as<T> tgt)
       {
         return detail::convert_zipped(self, tgt);
+      }
+
+      // store_ has to be in common and not in iterator, because
+      // of the model breaking on making `compress_store` an alogirhtm.
+      //
+      // it should be fine, zip<pointer...> -> perfectly reasonable to store to.
+
+      template <relative_conditional_expr C, typename N>
+      EVE_FORCEINLINE friend void tagged_dispatch(
+        eve::tag::store_, C c, wide<value_type, N> v, zip_iterator<Is...> self )
+      {
+        if constexpr (C::has_alternative)
+        {
+          v = eve::replace_ignored(v, c, c.alternative);
+          eve::store(v, self);
+        }
+        else
+        {
+          kumi::for_each([&](auto what, auto i) { return  eve::store[c](what, i); },
+                         v, self.storage);
+        }
+      }
+
+      template <typename N>
+      EVE_FORCEINLINE friend void tagged_dispatch( eve::tag::store_,
+                                                   wide<value_type, N> v,
+                                                   zip_iterator<Is...> self )
+      {
+        kumi::for_each([&](auto what, auto i) { return  eve::store(what, i); },
+                       v, self.storage);
+      }
+
+      template <relative_conditional_expr C, typename N>
+      EVE_FORCEINLINE friend auto tagged_dispatch( eve::tag::store_equivalent_,
+                                                   C c,
+                                                   wide<value_type, N> v,
+                                                   zip_iterator<Is...> self )
+      {
+        static_assert(!C::has_alternative, "not supported, unclear semantics");
+
+        auto recursed = kumi::map([c]( auto v_, auto self_ ) {
+          auto [_, v1_, self1_] = store_equivalent(c, v_, self_);
+          return kumi::make_tuple(v1_, self1_);
+        }, v, self);
+
+        auto self1_tuple = kumi::map([](auto v1_self1) { return kumi::get<1>(v1_self1); }, recursed );
+
+        auto self1 = []<std::size_t ... is>(auto tup, std::index_sequence<is...>)
+        { return zip_iterator<std::tuple_element_t<is, decltype(tup)>...> { get<is>(tup) ... }; }
+        ( self1_tuple, std::make_index_sequence<std::tuple_size_v<decltype(self1_tuple)>>{} );
+
+        wide<value_type_t<decltype(self1)>, N> v1;
+        kumi::for_each([](auto& v1_res, auto v1_self1) { v1_res = get<0>(v1_self1); }, v1, recursed);
+
+        return kumi::make_tuple(c, v1, self1);
       }
 
       tuple_type storage;
@@ -287,33 +385,26 @@ namespace eve::algo::views
     }
 
     template< relative_conditional_expr C, decorator S>
-    EVE_FORCEINLINE friend auto tagged_dispatch ( eve::tag::load_, C const& c, S const& s
-                                , auto const& pack, zip_iterator self
-                                )
+    EVE_FORCEINLINE friend auto tagged_dispatch (
+        eve::tag::load_, C const& c, S const& s
+      , eve::as<wide_value_type_t<zip_iterator>> const&
+      , zip_iterator self
+    )
     {
-      return eve::load(c, s, pack, self.storage);
-    }
-
-    template <relative_conditional_expr C>
-    EVE_FORCEINLINE friend void tagged_dispatch(
-      eve::tag::store_, C cond, wide_value_type_t<zip_iterator> v, zip_iterator self )
-    {
-      eve::store[cond](v, self.storage);
-    }
-
-    EVE_FORCEINLINE friend void tagged_dispatch( eve::tag::store_, wide_value_type_t<zip_iterator> v, zip_iterator self )
-    {
-      eve::store(v, self.storage);
-    }
-
-    template <relative_conditional_expr C, decorator Decorator, typename U>
-    EVE_FORCEINLINE friend auto tagged_dispatch( eve::tag::compress_store_,
-      C c, Decorator d, wide_value_type_t<zip_iterator> v,
-      eve::logical<eve::wide<U, iterator_cardinal_t<I>>> m,
-      zip_iterator self)
-    {
-      auto raw_res = d(eve::compress_store[c])(v, m, self.storage);
-      return unaligned_t<zip_iterator>{raw_res};
+      wide_value_type_t<zip_iterator> res;
+      if constexpr ( C::has_alternative )
+      {
+        kumi::for_each([&](auto part_alt, auto i, auto& r) {
+            auto new_c = c.map_alternative([&](auto) { return part_alt; });
+            r = eve::load(new_c, s, as(r), i); }
+          , c.alternative, self.storage, res);
+      }
+      else
+      {
+        kumi::for_each([&](auto i, auto& r) { r = eve::load(c, s, as(r), i); }
+                      , self.storage, res);
+      }
+      return res;
     }
   };
 
@@ -327,22 +418,12 @@ namespace eve::algo::views
 // tuple opt in
 namespace std
 {
-  template<std::size_t I, eve::algo::views::detail::derived_from_zip_iterator_common U>
-  struct  tuple_element<I, U> : tuple_element<I, typename U::tuple_type>
-  {
-  };
-
-  template<eve::algo::views::detail::derived_from_zip_iterator_common U>
-  struct tuple_size<U> : std::tuple_size<typename U::tuple_type>
-  {
-  };
-
   // I'm so not sure I'm doing this right
   template< typename ...Is, typename ZipI2, template<class> class TQual, template<class> class UQual >
     requires eve::algo::views::compatible_zip_iterators<eve::algo::views::zip_iterator<Is...>, ZipI2>
   struct basic_common_reference<eve::algo::views::zip_iterator<Is...>, ZipI2, TQual, UQual>
   {
-    using type = eve::algo::unaligned_t<ZipI2>;
+    using type = eve::unaligned_t<ZipI2>;
   };
 }
 // ~tuple opt in

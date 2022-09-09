@@ -1,8 +1,8 @@
 //==================================================================================================
 /*
   EVE - Expressive Vector Engine
-  Copyright : EVE Contributors & Maintainers
-  SPDX-License-Identifier: MIT
+  Copyright : EVE Project Contributors
+  SPDX-License-Identifier: BSL-1.0
 */
 //==================================================================================================
 #pragma once
@@ -36,14 +36,14 @@ namespace eve
   //================================================================================================
   // Dispatching tag for V*X SIMD implementation
   //================================================================================================
-  struct vmx_ : simd_ { using parent = simd_; };
-  struct vsx_ : vmx_  { using parent = vmx_; };
+  using vmx_  = simd_api<simd_    , spy::vmx_ >;
+  using vsx_  = simd_api<vmx_ , spy::vsx_>;
 
   //================================================================================================
-  // V*X extension tag objects
+  //  V*X extension tag objects
   //================================================================================================
-  inline constexpr auto vmx = spy::vmx_;
-  inline constexpr auto vsx = spy::vsx_;
+  inline constexpr vmx_ vmx = {};
+  inline constexpr vsx_ vsx = {};
 
   // clang-format on
   //================================================================================================

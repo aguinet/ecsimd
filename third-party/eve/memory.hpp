@@ -1,14 +1,14 @@
 //==================================================================================================
 /*
   EVE - Expressive Vector Engine
-  Copyright : EVE Contributors & Maintainers
-  SPDX-License-Identifier: MIT
+  Copyright : EVE Project Contributors
+  SPDX-License-Identifier: BSL-1.0
 */
 //==================================================================================================
 #pragma once
 
 //================================================================================================
-//! @addtogroup simd
+//! @addtogroup arch
 //! @{
 //! @defgroup memory Memory Management
 //!

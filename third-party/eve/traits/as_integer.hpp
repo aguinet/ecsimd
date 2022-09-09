@@ -1,23 +1,34 @@
 //==================================================================================================
 /*
   EVE - Expressive Vector Engine
-  Copyright : EVE Contributors & Maintainers
-  SPDX-License-Identifier: MIT
+  Copyright : EVE Project Contributors
+  SPDX-License-Identifier: BSL-1.0
 */
 //==================================================================================================
 #pragma once
 
-#include <eve/forward.hpp>
 #include <eve/detail/meta.hpp>
+#include <eve/detail/wide_forward.hpp>
+#include <eve/traits/element_type.hpp>
 
 namespace eve
 {
   namespace detail
   {
-    template<typename T> struct sign_of<logical<T>> : sign_of<T> {};
+    template<typename T>
+    struct default_as_integer_sign :
+     std::conditional<std::is_signed_v<element_type_t<T>>, signed, unsigned>
+    {
+    };
+
+    template<typename T>
+    struct default_as_integer_sign<logical<T>> : default_as_integer_sign<T> {};
+
+    template <typename T>
+    using default_as_integer_sign_t = typename default_as_integer_sign<T>::type;
   }
 
-  template<typename T, typename Sign = detail::sign_of_t<T>>
+  template<typename T, typename Sign = detail::default_as_integer_sign_t<T>>
   struct as_integer
   {
     using type = detail::make_integer_t<sizeof(T), Sign>;
@@ -35,7 +46,7 @@ namespace eve
     using type = logical< typename as_integer<T,Sign>::type >;
   };
 
-  template<typename T, typename Sign = detail::sign_of_t<T>>
+  template<typename T, typename Sign = detail::default_as_integer_sign_t<T>>
   using as_integer_t = typename as_integer<T, Sign>::type;
 
   template<typename T>

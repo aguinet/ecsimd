@@ -6,7 +6,7 @@
 #include <ecsimd/swap.h>
 #include <ecsimd/literals.h>
 
-#include <eve/function/all.hpp>
+#include <eve/module/core/regular/all.hpp>
 
 #include <gtest/gtest.h>
 

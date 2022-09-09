@@ -1,13 +1,13 @@
 //==================================================================================================
 /*
   EVE - Expressive Vector Engine
-  Copyright : EVE Contributors & Maintainers
-  SPDX-License-Identifier: MIT
+  Copyright : EVE Project Contributors
+  SPDX-License-Identifier: BSL-1.0
 */
 //==================================================================================================
 #pragma once
 
-#include <eve/algo/concepts/value_type.hpp>
+#include <eve/module/core.hpp>
 #include <eve/algo/concepts/types_to_consider.hpp>
 
 #include <eve/detail/raberu.hpp>
@@ -33,7 +33,7 @@ namespace eve::algo
   template <rbr::concepts::option ... Options>
   traits(Options&& ... options) -> traits<decltype(rbr::settings(EVE_FWD(options) ...))>;
 
-  struct unroll_key_t : rbr::any_keyword<unroll_key_t>
+  struct unroll_key_t : rbr::as_keyword<unroll_key_t>
   {
     template<typename Value> constexpr auto operator=(Value const&) const noexcept
     {
@@ -43,7 +43,7 @@ namespace eve::algo
   inline constexpr unroll_key_t unroll_key;
   template<int N> inline constexpr auto unroll = (unroll_key = eve::index<N>);
 
-  struct force_cardinal_key_t : rbr::any_keyword<force_cardinal_key_t>
+  struct force_cardinal_key_t : rbr::as_keyword<force_cardinal_key_t>
   {
     template<typename Value> constexpr auto operator=(Value const&) const noexcept
     {
@@ -74,18 +74,30 @@ namespace eve::algo
   inline constexpr auto divisible_by_cardinal = ::rbr::flag( divisible_by_cardinal_tag{} );
 
   struct no_aligning_tag {};
-  inline constexpr auto no_aligning = ::rbr::flag( no_aligning_tag{} );
 
+  //================================================================================================
+  //! @addtogroup algorithms
+  //! @{
+  //!   @var no_aligning
+  //!
+  //!   @brief Traits for disabling alignment handling in algorithm
+  //!
+  //!   Modify an algorithm semantic to not perform any additional operations to force the
+  //!   exploitation of the alignment of processed data.
+  //! @}
+  //================================================================================================
+  inline constexpr auto no_aligning = ::rbr::flag( no_aligning_tag{} );
 
   // getters -------------------
 
   template <typename Traits>
-  constexpr std::ptrdiff_t get_unrolling() {
-    return rbr::get_type_t<Traits, unroll_key, eve::fixed<1>>{}();
+  constexpr std::ptrdiff_t get_unrolling()
+  {
+    return rbr::result::fetch_t<(unroll_key | index<1>), Traits>{};
   }
 
   template <typename Traits>
-  using extra_types_to_consider = rbr::get_type_t<Traits, consider_types_key, kumi::tuple<>>;
+  using extra_types_to_consider = rbr::result::fetch_t<(consider_types_key | kumi::tuple{}), Traits>;
 
   template <typename Traits, typename RorI>
   using get_types_to_consider_for =
@@ -93,9 +105,9 @@ namespace eve::algo
 
   template <typename Traits, typename RorI>
   using iteration_cardinal_t =
-    rbr::get_type_t<Traits, force_cardinal_key,
-                    expected_cardinal_t<get_types_to_consider_for<Traits, RorI>>
-                   >;
+    rbr::result::fetch_t< (force_cardinal_key | expected_cardinal_t<get_types_to_consider_for<Traits, RorI>>{})
+                        , Traits
+                        >;
 
   inline constexpr auto default_to =
      []<typename User, typename Default>(traits<User> const& user, traits<Default> const& defaults)
@@ -103,8 +115,9 @@ namespace eve::algo
     if constexpr ( User::contains(consider_types_key) &&
                    Default::contains(consider_types_key) )
     {
-      auto consider_all_types = kumi::result::cat_t<rbr::get_type_t<User,    consider_types_key>,
-                                                    rbr::get_type_t<Default, consider_types_key>>{};
+      auto consider_all_types = kumi::result::cat_t < rbr::result::fetch_t<consider_types_key, User   >
+                                                    , rbr::result::fetch_t<consider_types_key, Default>
+                                                    >{};
       auto settings = rbr::merge(rbr::merge(rbr::settings(consider_types_key = consider_all_types),
                                             user),
                                  defaults);

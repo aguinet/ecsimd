@@ -3,6 +3,7 @@
 
 #include <eve/wide.hpp>
 #include <ecsimd/bignum.h>
+#include <ecsimd/compat.h>
 
 #include <tuple>
 
@@ -15,7 +16,7 @@ static auto add(WBN const& a, WBN const& b)
 
   cmp_res_t<WBN> carry_mask;
   WBN ret;
-  eve::detail::for_<0, 1, nlimbs>([&](auto i_) EVE_LAMBDA_FORCEINLINE {
+  eve::detail::for_<0, 1, nlimbs>([&](auto i_) ECSIMD_LAMBDA_FORCEINLINE {
     constexpr auto i = decltype(i_)::value;
     const auto aa = eve::get<i>(a);
     const auto bb = eve::get<i>(b);

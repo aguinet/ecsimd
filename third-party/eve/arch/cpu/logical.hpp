@@ -1,8 +1,8 @@
 //==================================================================================================
 /*
   EVE - Expressive Vector Engine
-  Copyright : EVE Contributors & Maintainers
-  SPDX-License-Identifier: MIT
+  Copyright : EVE Project Contributors
+  SPDX-License-Identifier: BSL-1.0
 */
 //==================================================================================================
 #pragma once
@@ -32,7 +32,7 @@ namespace eve
   //!
   //! @tparam T  Type of value to store a mask from
   //================================================================================================
-  template<typename T> struct logical
+  template<plain_scalar_value T> struct logical<T>
   {
     //! The type associated to the boolean mask.
     using value_type  = T;

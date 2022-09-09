@@ -6,6 +6,8 @@
 
 #include <ctbignum/bigint.hpp>
 
+#include <ecsimd/compat.h>
+
 #include <cstddef>
 #include <cstdint>
 #include <type_traits>
@@ -50,7 +52,7 @@ struct bignum: details::eve_struct_nlimbs<
   static bignum from(limb_type const v0) {
     bignum ret;
     get<0>(ret) = v0;
-    eve::detail::for_<1,1,nlimbs>([&](auto i_) EVE_LAMBDA_FORCEINLINE {
+    eve::detail::for_<1,1,nlimbs>([&](auto i_) ECSIMD_LAMBDA_FORCEINLINE {
       constexpr auto i = decltype(i_)::value;
       get<i>(ret) = 0;
     });
@@ -67,7 +69,7 @@ struct bignum: details::eve_struct_nlimbs<
 
   template <eve::like<bignum> T>
   friend auto& operator&=(T& a, T const& b) {
-    eve::detail::for_<0,1,nlimbs>([&](auto i_) EVE_LAMBDA_FORCEINLINE {
+    eve::detail::for_<0,1,nlimbs>([&](auto i_) ECSIMD_LAMBDA_FORCEINLINE {
       constexpr auto i = decltype(i_)::value;
       get<i>(a) &= get<i>(b);
     });
@@ -76,7 +78,7 @@ struct bignum: details::eve_struct_nlimbs<
 
   template <eve::like<bignum> T>
   friend auto& operator|=(T& a, T const& b) {
-    eve::detail::for_<0,1,nlimbs>([&](auto i_) EVE_LAMBDA_FORCEINLINE {
+    eve::detail::for_<0,1,nlimbs>([&](auto i_) ECSIMD_LAMBDA_FORCEINLINE {
       constexpr auto i = decltype(i_)::value;
       get<i>(a) |= get<i>(b);
     });
@@ -85,7 +87,7 @@ struct bignum: details::eve_struct_nlimbs<
 
   template <eve::like<bignum> T>
   friend auto& operator^=(T& a, T const& b) {
-    eve::detail::for_<0,1,nlimbs>([&](auto i_) EVE_LAMBDA_FORCEINLINE {
+    eve::detail::for_<0,1,nlimbs>([&](auto i_) ECSIMD_LAMBDA_FORCEINLINE {
       constexpr auto i = decltype(i_)::value;
       get<i>(a) ^= get<i>(b);
     });

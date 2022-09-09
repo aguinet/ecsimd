@@ -1,8 +1,8 @@
 //==================================================================================================
 /*
   EVE - Expressive Vector Engine
-  Copyright : EVE Contributors & Maintainers
-  SPDX-License-Identifier: MIT
+  Copyright : EVE Project Contributors
+  SPDX-License-Identifier: BSL-1.0
 */
 //==================================================================================================
 #pragma once
@@ -14,6 +14,7 @@
 #include <eve/traits/as_wide.hpp>
 #include <eve/as.hpp>
 
+#include <array>
 #include <cstddef>
 #include <type_traits>
 
@@ -86,37 +87,39 @@ namespace eve::detail
   // Logical slices
   //================================================================================================
   template<typename T, typename N>
-  EVE_FORCEINLINE auto slice(logical<wide<T, N>> const &a) noexcept
+  EVE_FORCEINLINE auto
+  slice(logical<wide<T, N>> const& a) noexcept
+    requires (is_native_v<abi_t<T, N>>) && abi_t<T, N>::is_wide_logical
   {
-    if constexpr( is_native_v<abi_t<T, N>> )
-    {
-      using l_t   = logical<wide<T, typename N::split_type>>;
-      using s_t   = typename l_t::storage_type;
-      using t_t   = std::array<l_t, 2>;
-      auto [l, h] = a.mask().slice();
-      return t_t{ l_t( bit_cast(l.storage(), as<s_t>()) )
-                , l_t( bit_cast(h.storage(), as<s_t>()) )
-                };
-    }
-    else
-    {
-      return slice_impl(a);
-    }
+    using l_t   = logical<wide<T, typename N::split_type>>;
+    using s_t   = typename l_t::storage_type;
+    using t_t   = std::array<l_t, 2>;
+    auto [l, h] = a.mask().slice();
+    return t_t {l_t(bit_cast(l.storage(), as<s_t>())), l_t(bit_cast(h.storage(), as<s_t>()))};
+  }
+
+  template<typename T, typename N, typename Slice>
+  EVE_FORCEINLINE logical<wide<T, typename N::split_type>>
+  slice(logical<wide<T, N>> const &a, Slice const &s) noexcept
+    requires (is_native_v<abi_t<T, N>>) && abi_t<T, N>::is_wide_logical
+  {
+    using l_t = logical<wide<T, typename N::split_type>>;
+    using s_t = typename l_t::storage_type;
+    return l_t( bit_cast(a.mask().slice(s).storage(), as<s_t>()) );
+  }
+
+  template<typename T, typename N>
+  EVE_FORCEINLINE auto slice(logical<wide<T, N>> const &a) noexcept
+    requires non_native_abi<abi_t<T, N>>
+  {
+    return slice_impl(a);
   }
 
   template<typename T, typename N, typename Slice>
   EVE_FORCEINLINE auto slice(logical<wide<T, N>> const &a, Slice const &s) noexcept
+    requires non_native_abi<abi_t<T, N>>
   {
-    if constexpr( is_native_v<abi_t<T, N>> )
-    {
-      using l_t = logical<wide<T, typename N::split_type>>;
-      using s_t = typename l_t::storage_type;
-      return l_t( bit_cast(a.mask().slice(s).storage(), as<s_t>()) );
-    }
-    else
-    {
-      return slice_impl(a, s);
-    }
+    return slice_impl(a, s);
   }
 
   //================================================================================================

@@ -1,23 +1,24 @@
 //==================================================================================================
 /*
   EVE - Expressive Vector Engine
-  Copyright : EVE Contributors & Maintainers
-  SPDX-License-Identifier: MIT
+  Copyright : EVE Project Contributors
+  SPDX-License-Identifier: BSL-1.0
 */
 //==================================================================================================
 #pragma once
 
+#include <eve/module/core.hpp>
 #include <eve/algo/copy.hpp>
 #include <eve/algo/views/iota.hpp>
 
 namespace eve::algo
 {
   //================================================================================================
-  //! @addtogroup eve.algo
+  //! @addtogroup algorithms
   //! @{
   //!  @var iota
   //!
-  //!  @brief version of `std::iota`
+  //!  @brief SIMD version of `std::iota`
   //!  For conversion/overflow behaviour, should follow the standard.
   //!
   //!  **Required header:** `#include <eve/algo/iota.hpp>`

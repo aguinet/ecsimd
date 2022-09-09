@@ -195,7 +195,7 @@ struct curve_group<Curve> {
     auto base = TRPLU(P);
     swap_if_same_z(wide_mask_bit(eve::get<0>(x), 1), P, base);
 
-    eve::detail::for_<0,1,bn_nlimbs<WBN>>([&](auto l_) EVE_LAMBDA_FORCEINLINE {
+    eve::detail::for_<0,1,bn_nlimbs<WBN>>([&](auto l_) ECSIMD_LAMBDA_FORCEINLINE {
       constexpr auto l = decltype(l_)::value;
       auto const& lx = eve::get<l>(x);
 
@@ -231,7 +231,7 @@ struct curve_group<Curve> {
     R[1-xbit] = &base;
     R[xbit] = &P;
 
-    eve::detail::for_<0,1,bn_nlimbs<WBN>>([&](auto l_) EVE_LAMBDA_FORCEINLINE {
+    eve::detail::for_<0,1,bn_nlimbs<WBN>>([&](auto l_) ECSIMD_LAMBDA_FORCEINLINE {
       constexpr auto l = decltype(l_)::value;
       auto const lx = kumi::get<l>(x);
 
